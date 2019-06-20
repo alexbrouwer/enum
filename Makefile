@@ -7,13 +7,7 @@ PROJECT_NAME = $(notdir $(PWD))
 
 # Note. If you change this, you also need to update docker-compose.yml.
 # only useful in a setting with multiple services/ makefiles.
-SERVICE_TARGET := workspace
-
-RELEASE_TYPE ?= patch
-GITHUB_USER = alexbrouwer
-GIT_REPO_NAME = $(PROJECT_NAME)
-GIT_BRANCH ?= master
-GIT_REMOTE ?= origin
+SERVICE_TARGET := main
 
 # if vars not set specifially: try default to environment, else fixed value.
 # strip to ensure spaces are removed in future editorial mistakes.
@@ -31,9 +25,6 @@ endif
 
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 CMD_ARGUMENTS ?= $(cmd)
-DOCKER_COMPOSE = docker-compose -f ./.docker/docker-compose.yml --project-directory ./.docker
-SEMVER_DOCKER ?= marcelocorreia/semver
-REPO_URL := git@github.com:$(GITHUB_USER)/$(GIT_REPO_NAME).git
 
 # export such that its passed to shell functions for Docker to pick up.
 export PROJECT_NAME
@@ -41,7 +32,7 @@ export HOST_USER
 export HOST_UID
 
 # all our targets are phony (no files to check).
-.PHONY: shell help build rebuild service login test clean prune deploy
+.PHONY: shell help build rebuild service login test clean prune
 
 # suppress makes own output
 #.SILENT:
@@ -55,10 +46,10 @@ export HOST_UID
 shell:
 ifeq ($(CMD_ARGUMENTS),)
 	# no command is given, default to shell
-	$(DOCKER_COMPOSE) -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh
+	docker-compose -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh
 else
 	# run the command
-	$(DOCKER_COMPOSE) -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh -c "$(CMD_ARGUMENTS)"
+	docker-compose -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh -c "$(CMD_ARGUMENTS)"
 endif
 
 # Regular Makefile part for buildpypi itself
@@ -66,15 +57,14 @@ help:
 	@echo ''
 	@echo 'Usage: make [TARGET] [EXTRA_ARGUMENTS]'
 	@echo 'Targets:'
-	@echo '  build		build docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  rebuild	rebuild docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  test		test docker --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  service	run as service --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  login		run as service and login --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  clean		remove docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
-	@echo '  deploy		deploy new release'
-	@echo '  prune		shortcut for docker system prune -af. Cleanup inactive containers and cache.'
-	@echo '  shell		run docker --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  build    	build docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  rebuild  	rebuild docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  test     	test docker --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  service   	run as service --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  login   	run as service and login --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  clean    	remove docker --image-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
+	@echo '  prune    	shortcut for docker system prune -af. Cleanup inactive containers and cache.'
+	@echo '  shell      run docker --container-- for current user: $(HOST_USER)(uid=$(HOST_UID))'
 	@echo ''
 	@echo 'Extra arguments:'
 	@echo 'cmd=:	make cmd="whoami"'
@@ -84,11 +74,11 @@ help:
 
 rebuild:
 	# force a rebuild by passing --no-cache
-	$(DOCKER_COMPOSE) build --no-cache $(SERVICE_TARGET)
+	docker-compose build --no-cache $(SERVICE_TARGET)
 
 service:
 	# run as a (background) service
-	$(DOCKER_COMPOSE) -p $(PROJECT_NAME)_$(HOST_UID) up -d $(SERVICE_TARGET)
+	docker-compose -p $(PROJECT_NAME)_$(HOST_UID) up -d $(SERVICE_TARGET)
 
 login: service
 	# run as a service and attach to it
@@ -96,11 +86,11 @@ login: service
 
 build:
 	# only build the container. Note, docker does this also if you apply other targets.
-	$(DOCKER_COMPOSE) build $(SERVICE_TARGET)
+	docker-compose build $(SERVICE_TARGET)
 
 clean:
 	# remove created images
-	@$(DOCKER_COMPOSE) -p $(PROJECT_NAME)_$(HOST_UID) down --remove-orphans --rmi all 2>/dev/null \
+	@docker-compose -p $(PROJECT_NAME)_$(HOST_UID) down --remove-orphans --rmi all 2>/dev/null \
 	&& echo 'Image(s) for "$(PROJECT_NAME):$(HOST_USER)" removed.' \
 	|| echo 'Image(s) for "$(PROJECT_NAME):$(HOST_USER)" already removed.'
 
@@ -109,27 +99,4 @@ prune:
 	docker system prune -af
 
 test:
-	$(DOCKER_COMPOSE) -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh -c "composer verify"
-
-all-versions:
-	@git ls-remote --tags $(GIT_REMOTE)
-
-current-version: _setup-versions
-	@echo $(CURRENT_VERSION)
-
-next-version: _setup-versions
-	@echo $(NEXT_VERSION)
-
-deploy: _release
-
-	# Internal targets
-_setup-versions:
-	$(eval export CURRENT_VERSION=$(shell git ls-remote --tags $(GIT_REMOTE) | grep -v latest | awk '{ print $$2}'|grep -v 'stable'| sort -r --version-sort | head -n1|sed 's/refs\/tags\///g'))
-	$(eval export NEXT_VERSION=$(shell docker run --rm --entrypoint=semver $(SEMVER_DOCKER) -c -i $(RELEASE_TYPE) $(CURRENT_VERSION)))
-
-_release: _setup-versions ## Release by adding a new tag. RELEASE_TYPE is 'patch' by default, and can be set to 'minor' or 'major'.
-	$(info $(M) Releasing version $(NEXT_VERSION)...)
-	@github-release release -u $(GITHUB_USER) -r $(GIT_REPO_NAME) --tag $(NEXT_VERSION) --name $(NEXT_VERSION)
-
-_initial-release:
-	@github-release release -u $(GITHUB_USER) -r $(GIT_REPO_NAME) --tag 0.0.0 --name 0.0.0
+	docker-compose -p $(PROJECT_NAME)_$(HOST_UID) run --rm $(SERVICE_TARGET) sh -c 'composer test'

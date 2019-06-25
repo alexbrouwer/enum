@@ -115,6 +115,9 @@ abstract class Enum implements Enumerable, ObjectInterface
         throw LogicException::invalidName($class, $name, $pattern);
     }
 
+    /**
+     * @return array<string, object>
+     */
     protected static function enumerate(): array
     {
         return [];
@@ -151,8 +154,8 @@ abstract class Enum implements Enumerable, ObjectInterface
         }
 
         foreach ($elementObjects as $elementName => $elementObject) {
-            self::assertValidElementName($class, $elementName);
-            self::assertValidInstance($class, $elementName, $elementObject);
+            self::assertValidElementName($class, (string)$elementName);
+            self::assertValidInstance($class, (string)$elementName, $elementObject);
         }
 
         return $elementObjects;
@@ -195,8 +198,8 @@ abstract class Enum implements Enumerable, ObjectInterface
     }
 
     /**
-     * @param $name
-     * @param $arguments
+     * @param string $name
+     * @param array  $arguments
      *
      * @return Enum
      * @throws BadMethodCallException

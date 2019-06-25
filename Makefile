@@ -15,7 +15,8 @@ clean:
 build:
 	@composer install --no-interaction
 
-# Test project
+## Test project
 test:
 	@composer validate
 	@composer -- check
+	@composer -- analyse

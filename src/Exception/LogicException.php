@@ -46,8 +46,9 @@ class LogicException extends \LogicException implements ExceptionInterface
     {
         if (strpos($class, 'class@anonymous') === 0) {
             $parents = class_parents($class);
-
-            return reset($parents) ?? $class;
+            if (count($parents)) {
+                return reset($parents);
+            }
         }
 
         return $class;

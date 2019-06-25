@@ -4,7 +4,7 @@
     "type": "library",
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "license": "proprietary",
+  "license": "MIT",
     "config": {
         "sort-packages": true,
         "platform": {
@@ -18,11 +18,14 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "PAR\\Enum\\Tests\\": "tests/"
+          "PARTest\\Enum\\": "test/"
         }
     },
     "require": {
-        "php": "^7.2"
+      "php": "^7.2",
+      "par/coding-standard": "^1.0",
+      "par/core": "dev-master",
+      "par/maker": "^1.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.1",

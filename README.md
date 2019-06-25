@@ -1,6 +1,9 @@
 PHP Addition Repository - Enum
 ==============================
 
+[![Build Status](https://travis-ci.org/php-addition-repository/enum.svg?branch=master)](https://travis-ci.org/php-addition-repository/enum)
+[![Coverage Status](https://coveralls.io/repos/github/php-addition-repository/enum/badge.svg?branch=master)](https://coveralls.io/github/php-addition-repository/enum?branch=master)
+
 This package offers strongly types enums in PHP. We don't use a simple "value" representation, so you're always working with the enum object. This allows for proper autocompletion and refactoring in IDEs.
 
 Here's how enums are created with this package

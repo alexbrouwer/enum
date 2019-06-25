@@ -31,5 +31,16 @@
         "phpstan/phpstan": "^0.11.8",
         "phpunit/phpunit": "^8.1",
         "roave/security-advisories": "dev-master"
+    },
+    "scripts": {
+        "analyse": "phpstan analyse --no-progress",
+        "check": [
+            "@cs-check",
+            "@test"
+        ],
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "test": "phpunit --colors=always",
+        "test-coverage": "phpunit --colors=always --coverage-clover clover.xml"
     }
 }

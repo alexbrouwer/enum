@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d7b62a6c964275e2381465e0b0430e65",
+    "content-hash": "50c6f56c42f4c2c1a39432344ed1298b",
     "packages": [
         {
             "name": "par/core",
-            "version": "0.1.0",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-addition-repository/core.git",
-                "reference": "8a526979f2833fe43f0e76427a20efca1592729e"
+                "reference": "afa76a2e51d5bafa38628e48e108427104f632a7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/8a526979f2833fe43f0e76427a20efca1592729e",
-                "reference": "8a526979f2833fe43f0e76427a20efca1592729e",
+                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/afa76a2e51d5bafa38628e48e108427104f632a7",
+                "reference": "afa76a2e51d5bafa38628e48e108427104f632a7",
                 "shasum": ""
             },
             "require": {
@@ -25,7 +25,7 @@
             },
             "require-dev": {
                 "par/coding-standard": "^1.0",
-                "par/maker": "^1.0",
+                "par/maker": "^1.1",
                 "phpstan/phpstan": "^0.11.8",
                 "phpunit/phpunit": "^8.1",
                 "roave/security-advisories": "dev-master"
@@ -41,7 +41,7 @@
                 "MIT"
             ],
             "description": "Core structures and helpers",
-            "time": "2019-06-25T12:20:16+00:00"
+            "time": "2019-06-26T13:41:33+00:00"
         }
     ],
     "packages-dev": [

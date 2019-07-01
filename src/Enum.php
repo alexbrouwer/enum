@@ -2,6 +2,7 @@
 
 namespace PAR\Enum;
 
+use PAR\Core\ComparableInterface;
 use PAR\Core\Helper\ClassHelper;
 use PAR\Core\Helper\InstanceHelper;
 use PAR\Core\ObjectInterface;
@@ -10,7 +11,7 @@ use PAR\Enum\Exception\InvalidArgumentException;
 use PAR\Enum\Exception\LogicException;
 use ReflectionClass;
 
-abstract class Enum implements Enumerable, ObjectInterface
+abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
 {
     /**
      * @var array<string, array>
@@ -28,6 +29,43 @@ abstract class Enum implements Enumerable, ObjectInterface
     private $name;
 
     /**
+     * @param string $name
+     * @param array  $arguments
+     *
+     * @return Enum
+     * @throws BadMethodCallException
+     */
+    final public static function __callStatic($name, $arguments): self
+    {
+        if (static::isValidName($name)) {
+            return static::valueOf($name);
+        }
+
+        throw BadMethodCallException::undefinedMethod(static::class, $name);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    final public static function valueOf(string $name): self
+    {
+        if (static::isValidName($name)) {
+            return static::resolve()[$name];
+        }
+
+        throw InvalidArgumentException::unknownElement(static::class, $name);
+    }
+
+    /**
+     * @inheritDoc
+     * @return static[]
+     */
+    final public static function values(): array
+    {
+        return array_values(self::resolve());
+    }
+
+    /**
      * Enum should never be created via the new keyword, only via static methods
      *
      * @internal
@@ -39,12 +77,11 @@ abstract class Enum implements Enumerable, ObjectInterface
     }
 
     /**
-     * @inheritDoc
-     * @return static[]
+     * @return array<string, object>
      */
-    final public static function values(): array
+    protected static function enumerate(): array
     {
-        return array_values(self::resolve());
+        return [];
     }
 
     private static function resolve(): array
@@ -113,14 +150,6 @@ abstract class Enum implements Enumerable, ObjectInterface
         }
 
         throw LogicException::invalidName($class, $name, $pattern);
-    }
-
-    /**
-     * @return array<string, object>
-     */
-    protected static function enumerate(): array
-    {
-        return [];
     }
 
     private static function normalizeElements(string $class, array $elementNames, array $elementObjects): array
@@ -197,37 +226,9 @@ abstract class Enum implements Enumerable, ObjectInterface
         }
     }
 
-    /**
-     * @param string $name
-     * @param array  $arguments
-     *
-     * @return Enum
-     * @throws BadMethodCallException
-     */
-    final public static function __callStatic($name, $arguments): self
-    {
-        if (static::isValidName($name)) {
-            return static::valueOf($name);
-        }
-
-        throw BadMethodCallException::undefinedMethod(static::class, $name);
-    }
-
     private static function isValidName(string $name): bool
     {
         return array_key_exists($name, self::resolve());
-    }
-
-    /**
-     * @inheritDoc
-     */
-    final public static function valueOf(string $name): self
-    {
-        if (static::isValidName($name)) {
-            return static::resolve()[$name];
-        }
-
-        throw InvalidArgumentException::unknownElement(static::class, $name);
     }
 
     /**
@@ -271,4 +272,17 @@ abstract class Enum implements Enumerable, ObjectInterface
         return InstanceHelper::isOfClass($other, static::class)
             && $this->name() === $other->name();
     }
+
+    /**
+     * @inheritDoc
+     */
+    public function compareTo(ComparableInterface $other): int
+    {
+        // Make sure other is of same class
+        InstanceHelper::assertIsOfClass($other, static::class);
+
+        /* @var self $other */
+        return $this->ordinal() <=> $other->ordinal();
+    }
+
 }

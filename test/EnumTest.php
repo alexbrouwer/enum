@@ -2,7 +2,7 @@
 
 namespace PARTest\Enum;
 
-use PAR\Core\Exception\ClassCastException;
+use PAR\Core\Exception\ClassMismatchException;
 use PAR\Enum\Enum;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
@@ -124,7 +124,7 @@ class EnumTest extends TestCase
 
     public function testCompareToWrongType(): void
     {
-        $this->expectException(ClassCastException::class);
+        $this->expectException(ClassMismatchException::class);
 
         WeekDay::MONDAY()->compareTo(Planet::EARTH());
     }

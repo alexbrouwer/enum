@@ -5,6 +5,12 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Alex Brouwer",
+            "role": "lead"
+        }
+    ],
     "config": {
         "sort-packages": true,
         "platform": {

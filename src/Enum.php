@@ -3,7 +3,7 @@
 namespace PAR\Enum;
 
 use PAR\Core\ComparableInterface;
-use PAR\Core\Exception\ClassCastException;
+use PAR\Core\Exception\ClassMismatchException;
 use PAR\Core\ObjectInterface;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
@@ -271,7 +271,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      * @param ComparableInterface $other The other object to be compared.
      *
      * @return int
-     * @throws ClassCastException If the other object's type prevents it from being compared to this object.
+     * @throws ClassMismatchException If the other object's type prevents it from being compared to this object.
      */
     public function compareTo(ComparableInterface $other): int
     {
@@ -279,7 +279,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
             return $this->ordinal() - $other->ordinal();
         }
 
-        throw ClassCastException::unexpectedType($other, static::class);
+        throw ClassMismatchException::expectedInstance($this, $other);
     }
 
     /**

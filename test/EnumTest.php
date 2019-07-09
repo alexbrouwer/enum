@@ -1,161 +1,153 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PARTest\Enum;
 
-use PAR\Enum\Exception\BadMethodCallException;
-use PAR\Enum\Exception\InvalidArgumentException;
-use PAR\Enum\Exception\LogicException;
-use PARTest\Enum\Fixtures\InvalidElementNameEnum;
-use PARTest\Enum\Fixtures\MissingElementInDocBlockEnum;
-use PARTest\Enum\Fixtures\MissingElementInEnumerateEnum;
-use PARTest\Enum\Fixtures\NameWithinEnumerateEnum;
-use PARTest\Enum\Fixtures\NonAbstractEnum;
-use PARTest\Enum\Fixtures\OrdinalWithinEnumerateEnum;
-use PARTest\Enum\Fixtures\ValidEnum;
-use PARTest\Enum\Fixtures\WrongElementInstanceInEnumerateEnum;
+use PAR\Core\Exception\ClassCastException;
+use PAR\Enum\Enum;
+use PAR\Enum\Exception\CloneNotSupportedException;
+use PAR\Enum\Exception\InvalidClassException;
+use PAR\Enum\Exception\MissingConstantsException;
+use PAR\Enum\Exception\SerializeNotSupportedException;
+use PAR\Enum\Exception\UnknownEnumException;
+use PAR\Enum\Exception\UnserializeNotSupportedException;
+use PARTest\Enum\Fixtures\MissingConstantEnum;
+use PARTest\Enum\Fixtures\NonFinalOrAbstractEnum;
+use PARTest\Enum\Fixtures\Planet;
+use PARTest\Enum\Fixtures\WeekDay;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class EnumTest extends TestCase
 {
-
-    public function testThatElementsFromDocBlockAreAvailable(): void
+    public function setUp(): void
     {
-        $elements = ValidEnum::values();
+        // Reset all static properties
+        $reflectionClass = new ReflectionClass(Enum::class);
 
-        $this->assertCount(2, $elements);
-        $this->assertContains(ValidEnum::ELEMENT_A(), $elements);
-        $this->assertContains(ValidEnum::ELEMENT_B(), $elements);
+        $constantsProperty = $reflectionClass->getProperty('configuration');
+        $constantsProperty->setAccessible(true);
+        $constantsProperty->setValue([]);
+
+        $valuesProperty = $reflectionClass->getProperty('instances');
+        $valuesProperty->setAccessible(true);
+        $valuesProperty->setValue([]);
+
+        $allValuesLoadedProperty = $reflectionClass->getProperty('allInstancesLoaded');
+        $allValuesLoadedProperty->setAccessible(true);
+        $allValuesLoadedProperty->setValue([]);
+
+        parent::setUp();
     }
 
-    public function testThatElementsHaveName(): void
+    public function testToString(): void
     {
-        $this->assertSame('ELEMENT_A', ValidEnum::ELEMENT_A()->name());
-        $this->assertSame('ELEMENT_B', ValidEnum::ELEMENT_B()->name());
+        $weekday = WeekDay::FRIDAY();
+
+        $this->assertSame('FRIDAY', $weekday->toString());
+        $this->assertSame('FRIDAY', (string)$weekday);
     }
 
-    public function testThatElementsHaveOrdinal(): void
+    public function testName(): void
     {
-        $this->assertSame(0, ValidEnum::ELEMENT_A()->ordinal());
-        $this->assertSame(1, ValidEnum::ELEMENT_B()->ordinal());
+        $this->assertSame('THURSDAY', WeekDay::THURSDAY()->name());
     }
 
-    public function testThatElementsHaveString(): void
+    public function testOrdinal(): void
     {
-        $this->assertSame('ELEMENT_A', ValidEnum::ELEMENT_A()->toString());
+        $this->assertSame(2, WeekDay::WEDNESDAY()->ordinal());
     }
 
-    public function testThatEqualityCanBeDeterminedBetweenElements(): void
+    public function testStrictComparison(): void
     {
-        $this->assertTrue(ValidEnum::ELEMENT_A()->equals(ValidEnum::ELEMENT_A()));
-        $this->assertFalse(ValidEnum::ELEMENT_A()->equals(ValidEnum::ELEMENT_B()));
+        $this->assertSame(WeekDay::FRIDAY(), WeekDay::FRIDAY());
+        $this->assertNotSame(WeekDay::FRIDAY(), WeekDay::SATURDAY());
     }
 
-    public function testThatValuesCanBeReturned(): void
+    public function testValueOf(): void
     {
-        $this->assertSame(
-            [
-                ValidEnum::ELEMENT_A(),
-                ValidEnum::ELEMENT_B(),
-            ],
-            ValidEnum::values()
-        );
+        $this->assertSame(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
     }
 
-    public function testThatValueOfReturnsExpectedElement(): void
+    public function testValueOfWithInvalidName(): void
     {
-        $actual = ValidEnum::valueOf('ELEMENT_A');
+        $this->expectException(UnknownEnumException::class);
 
-        $this->assertSame('ELEMENT_A', $actual->name());
+        WeekDay::valueOf('MAANDAG');
     }
 
-    public function testThatValueOfThrowsExceptionWhenElementDoesNotExist(): void
+    public function testCloneNotSupported(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(
-            'Enum PARTest\Enum\Fixtures\ValidEnum does not have an element "I_DO_NOT_EXIST".'
-        );
+        $this->expectException(CloneNotSupportedException::class);
 
-        ValidEnum::valueOf('I_DO_NOT_EXIST');
+        /** @noinspection PhpExpressionResultUnusedInspection */
+        clone WeekDay::FRIDAY();
     }
 
-    public function testThatNonAbstractEnumThrowsException(): void
+    public function testSerializeNotSupported(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('Enum PARTest\Enum\Fixtures\NonAbstractEnum must be declared abstract.');
+        $this->expectException(SerializeNotSupportedException::class);
 
-        NonAbstractEnum::values();
+        serialize(WeekDay::FRIDAY());
     }
 
-    public function testThatInvalidElementNameThrowsException(): void
+    public function testUnserializeNotSupported(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Element name "INVA LID" in ' . InvalidElementNameEnum::class . ' does not match pattern /^[a-zA-Z_][a-zA-Z_0-9]*$/.'
-        );
+        $this->expectException(UnserializeNotSupportedException::class);
 
-        InvalidElementNameEnum::values();
+        unserialize(sprintf('O:%d:"%s":0:{}', strlen(WeekDay::class), WeekDay::class));
     }
 
-    public function testThatElementsInEnumerateMustBeDeclaredInDocBlock(): void
+    public function testReturnValueOfValuesIsSortedByOrdinal(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Enum PARTest\Enum\Fixtures\MissingElementInEnumerateEnum is missing key(s) [ELEMENT_B] in enumerate().'
-        );
+        // Initialize some out of orders
+        WeekDay::SATURDAY();
+        WeekDay::TUESDAY();
 
-        MissingElementInEnumerateEnum::values();
-    }
-
-    public function testThatElementsInDocBlockMustBeDeclaredInEnumerate(): void
-    {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Enum ' . MissingElementInDocBlockEnum::class . ' is missing "@method static self ...()" declaration(s) ' .
-            'for [UNDEFINED_ELEMENT] in class docComment.'
+        $ordinals = array_values(
+            array_map(
+                static function (WeekDay $weekDay): int {
+                    return $weekDay->ordinal();
+                },
+                WeekDay::values()
+            )
         );
 
-        MissingElementInDocBlockEnum::values();
+        self::assertSame([0, 1, 2, 3, 4, 5, 6], $ordinals);
     }
 
-    public function testThatOrdinalThrowsExceptionWithinEnumerate(): void
+    public function testCompareTo(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Cannot call ordinal() within ' . OrdinalWithinEnumerateEnum::class . '::enumerate().'
-        );
-
-        OrdinalWithinEnumerateEnum::ELEMENT_A();
+        $this->assertSame(-4, WeekDay::WEDNESDAY()->compareTo(WeekDay::SUNDAY()));
+        $this->assertSame(4, WeekDay::SUNDAY()->compareTo(WeekDay::WEDNESDAY()));
+        $this->assertSame(0, WeekDay::WEDNESDAY()->compareTo(WeekDay::WEDNESDAY()));
     }
 
-    public function testThatNameThrowsExceptionWithinEnumerate(): void
+    public function testCompareToWrongType(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Cannot call name() within ' . NameWithinEnumerateEnum::class . '::enumerate().'
-        );
+        $this->expectException(ClassCastException::class);
 
-        NameWithinEnumerateEnum::ELEMENT_A();
+        WeekDay::MONDAY()->compareTo(Planet::EARTH());
     }
 
-    public function testThatAccessingNonExistingElementThrowsException(): void
+    public function testParameterizedEnum(): void
     {
-        $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Call to undefined method PARTest\Enum\Fixtures\ValidEnum::NON_EXISTING');
+        $planet = Planet::EARTH();
 
-        forward_static_call(ValidEnum::class . '::NON_EXISTING');
+        $this->assertSame(5.976e+24, $planet->mass());
+        $this->assertSame(6.37814e6, $planet->radius());
     }
 
-    public function testThatReturningWrongElementInstanceInEnumerateThrowsException(): void
+    public function testNonAbstractOrFinalEnumThrowsException(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage(
-            'Key "ELEMENT_B" in in ' . WrongElementInstanceInEnumerateEnum::class
-            . '::enumerate() must contain an instance of ' . WrongElementInstanceInEnumerateEnum::class
-            . ', got an instance of PARTest\Enum\Fixtures\ValidEnum.'
-        );
+        $this->expectException(InvalidClassException::class);
 
-        WrongElementInstanceInEnumerateEnum::values();
+        NonFinalOrAbstractEnum::values();
     }
 
-    // test clone, set_state, sleep, wakeup, serialize, unserialize
+    public function testAllMethodsMustHaveAConstant(): void
+    {
+        $this->expectException(MissingConstantsException::class);
+
+        MissingConstantEnum::values();
+    }
 }

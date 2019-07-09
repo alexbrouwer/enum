@@ -3,25 +3,33 @@
 namespace PAR\Enum;
 
 use PAR\Core\ComparableInterface;
-use PAR\Core\Helper\ClassHelper;
+use PAR\Core\Exception\ClassCastException;
 use PAR\Core\Helper\InstanceHelper;
 use PAR\Core\ObjectInterface;
-use PAR\Enum\Exception\BadMethodCallException;
-use PAR\Enum\Exception\InvalidArgumentException;
-use PAR\Enum\Exception\LogicException;
+use PAR\Enum\Exception\CloneNotSupportedException;
+use PAR\Enum\Exception\InvalidClassException;
+use PAR\Enum\Exception\MissingConstantsException;
+use PAR\Enum\Exception\SerializeNotSupportedException;
+use PAR\Enum\Exception\UnknownEnumException;
+use PAR\Enum\Exception\UnserializeNotSupportedException;
 use ReflectionClass;
 
 abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
 {
     /**
-     * @var array<string, array>
+     * @var array<string, array<int, array>>
      */
-    private static $cache = [];
+    private static $configuration = [];
 
     /**
-     * @var int
+     * @var array<string, bool>
      */
-    private $ordinal;
+    private static $allInstancesLoaded = [];
+
+    /**
+     * @var array<string, array<string, static>>
+     */
+    private static $instances = [];
 
     /**
      * @var string
@@ -29,260 +37,276 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
     private $name;
 
     /**
-     * @param string $name
-     * @param array  $arguments
+     * @var int
+     */
+    private $ordinal;
+
+    /**
+     * The constructor is private by default to avoid arbitrary enum creation.
      *
-     * @return Enum
-     * @throws BadMethodCallException
+     * When creating your own constructor for a parameterized enum, make sure to declare it as protected, so that the
+     * static methods are able to construct it. Do not make it public, as that would allow creation of non-singleton
+     * enum instances.
      */
-    final public static function __callStatic($name, $arguments): self
+    private function __construct()
     {
-        if (static::isValidName($name)) {
-            return static::valueOf($name);
-        }
-
-        throw BadMethodCallException::undefinedMethod(static::class, $name);
     }
 
     /**
-     * @inheritDoc
-     */
-    final public static function valueOf(string $name): self
-    {
-        if (static::isValidName($name)) {
-            return static::resolve()[$name];
-        }
-
-        throw InvalidArgumentException::unknownElement(static::class, $name);
-    }
-
-    /**
-     * @inheritDoc
-     * @return static[]
-     */
-    final public static function values(): array
-    {
-        return array_values(self::resolve());
-    }
-
-    /**
-     * Enum should never be created via the new keyword, only via static methods
+     * Maps static methods calls to instances.
      *
-     * @internal
-     * @see static::valueOf()
+     * @param string $name      The name of the instance.
+     * @param array  $arguments Ignored.
+     *
+     * @return static
+     * @throws InvalidClassException
+     * @throws MissingConstantsException
      */
-    final public function __construct()
+    final public static function __callStatic(string $name, array $arguments): self
     {
-        // No op.
+        return static::valueOf($name);
     }
 
     /**
-     * @return array<string, object>
+     * Returns the enum element of the specified enum type with the specified name. The name must match exactly an
+     * identifier used to declare an enum element in this type. (Extraneous whitespace characters are not permitted.)
+     *
+     * @param string $name The name of the element to return
+     *
+     * @return static
+     * @throws InvalidClassException
+     * @throws MissingConstantsException
+     * @throws UnknownEnumException
      */
-    protected static function enumerate(): array
+    public static function valueOf(string $name): self
     {
-        return [];
+        if (isset(self::$instances[static::class][$name])) {
+            return self::$instances[static::class][$name];
+        }
+
+        $configuration = self::configuration();
+
+        if (array_key_exists($name, $configuration)) {
+            [$ordinal, $arguments] = $configuration[$name];
+
+            return self::createValue($name, $ordinal, $arguments);
+        }
+
+        throw UnknownEnumException::withName(static::class, $name);
     }
 
-    private static function resolve(): array
+    /**
+     * Returns an array containing the elements of this enum type, in the order they are declared.
+     *
+     * @return array<static>
+     * @throws InvalidClassException
+     * @throws MissingConstantsException
+     */
+    public static function values(): array
     {
-
-        $class = static::class;
-        if (isset(self::$cache[$class])) {
-            return self::$cache[$class];
+        if (isset(self::$allInstancesLoaded[static::class])) {
+            return self::$instances[static::class];
         }
 
-        if (!ClassHelper::isAbstract($class)) {
-            throw LogicException::mustBeAbstract($class);
+        if (!isset(self::$instances[static::class])) {
+            self::$instances[static::class] = [];
         }
 
-        $reflection = ClassHelper::getReflectionClass($class);
-        $elementNames = self::resolveFromDocBlocks($reflection);
-        $elementObjects = static::enumerate();
+        foreach (self::configuration() as $name => $configuration) {
+            if (array_key_exists($name, self::$instances[static::class])) {
+                continue;
+            }
 
-        $elements = self::normalizeElements(
-            $class,
-            $elementNames,
-            $elementObjects
+            [$ordinal, $arguments] = $configuration;
+
+            static::createValue($name, $ordinal, $arguments);
+        }
+
+        uasort(
+            self::$instances[static::class],
+            static function (self $a, self $b) {
+                return $a->ordinal() <=> $b->ordinal();
+            }
         );
 
-        self::populateElements($elements);
+        self::$allInstancesLoaded[static::class] = true;
 
-        return self::$cache[$class] = $elements;
+        return self::$instances[static::class];
     }
 
     /**
-     * Returns list of methods declared via PHP DocBlock.
-     *
-     * @param ReflectionClass $reflection
-     *
-     * @return string[]
+     * @return array
+     * @throws InvalidClassException
+     * @throws MissingConstantsException
      */
-    private static function resolveFromDocBlocks(ReflectionClass $reflection): array
+    private static function configuration(): array
+    {
+        if (isset(self::$configuration[static::class])) {
+            return self::$configuration[static::class];
+        }
+
+        self::$configuration[static::class] = [];
+
+        $reflectionClass = new ReflectionClass(static::class);
+        if (!$reflectionClass->isAbstract() && !$reflectionClass->isFinal()) {
+            throw new InvalidClassException(static::class);
+        }
+
+        $constants = [];
+        foreach ($reflectionClass->getReflectionConstants() as $reflectionClassConstant) {
+            if (!$reflectionClassConstant->isProtected()) {
+                continue;
+            }
+
+            $value = $reflectionClassConstant->getValue();
+            $constants[$reflectionClassConstant->getName()] = is_array($value) ? $value : [];
+        }
+
+        $methods = self::resolveMethodsFromDocBlock($reflectionClass);
+
+        // Validate all (or none of the) methods have a constant value
+        $missingConstants = array_diff($methods, array_keys($constants));
+        $numMissingConstants = count($missingConstants);
+        if ($numMissingConstants > 0 && $numMissingConstants !== count($methods)) {
+            throw new MissingConstantsException(static::class, $missingConstants);
+        }
+
+        $ordinal = -1;
+        foreach ($methods as $methodName) {
+            self::$configuration[static::class][$methodName] = [
+                ++$ordinal,
+                $constants[$methodName] ?? [],
+            ];
+        }
+
+        return self::$configuration[static::class];
+    }
+
+    private static function resolveMethodsFromDocBlock(ReflectionClass $reflection): array
     {
         $values = [];
-
         $docComment = $reflection->getDocComment();
         if (!$docComment) {
             return $values;
         }
 
-        preg_match_all(
-            '/@method\s+static\s+\S+\s+(.+?)\s*(?:\(\s*\))?\s*\n/',
-            $docComment,
-            $matches,
-            PREG_SET_ORDER
-        );
-
-        foreach ($matches as $match) {
-            self::assertValidElementName($reflection->getName(), $match[1]);
-            $values[] = $match[1];
+        preg_match_all('/\@method\s+static\s+self\s+([\w]+)\(\s*?\)/', $docComment, $matches);
+        foreach ($matches[1] ?? [] as $value) {
+            $values[] = $value;
         }
 
         return $values;
     }
 
-    private static function assertValidElementName(string $class, string $name): void
+    private static function createValue(string $name, int $ordinal, array $arguments): self
     {
-        $pattern = '/^[a-zA-Z_][a-zA-Z_0-9]*$/';
-        if (preg_match($pattern, $name)) {
-            return;
-        }
+        /**
+         * The default implementation does not accept any arguments
+         *
+         * @noinspection PhpMethodParametersCountMismatchInspection
+         */
+        $instance = new static(...$arguments);
+        $instance->name = $name;
+        $instance->ordinal = $ordinal;
 
-        throw LogicException::invalidName($class, $name, $pattern);
-    }
-
-    private static function normalizeElements(string $class, array $elementNames, array $elementObjects): array
-    {
-        if (count($elementObjects) === 0) {
-            return self::createDynamicElementObjects($class, $elementNames);
-        }
-
-        $enumeratedElementNames = array_keys($elementObjects);
-        $extraEnumeratedKeys = array_diff(
-            $enumeratedElementNames,
-            $elementNames
-        );
-
-        if (count($extraEnumeratedKeys) > 0) {
-            throw LogicException::missingElementsInDocBlock(
-                $class,
-                $extraEnumeratedKeys
-            );
-        }
-
-        $missingKeysInEnumeration = array_diff(
-            $elementNames,
-            $enumeratedElementNames
-        );
-        if (count($missingKeysInEnumeration) > 0) {
-            throw LogicException::missingKeysInEnumeration(
-                $class,
-                $missingKeysInEnumeration
-            );
-        }
-
-        foreach ($elementObjects as $elementName => $elementObject) {
-            self::assertValidElementName($class, (string)$elementName);
-            self::assertValidInstance($class, (string)$elementName, $elementObject);
-        }
-
-        return $elementObjects;
-    }
-
-    private static function createDynamicElementObjects(string $class, array $elementNames): array
-    {
-        $createdObjects = '';
-        foreach ($elementNames as $elementName) {
-            if (!method_exists($class, $elementName)) {
-                $createdObjects .= sprintf(
-                    '"%s" => new class() extends %s {},',
-                    $elementName,
-                    $class
-                );
-            }
-        }
-
-        return eval(sprintf('return [%s];', $createdObjects));
-    }
-
-    private static function assertValidInstance(string $class, string $name, $instance)
-    {
-        if ($instance instanceof $class) {
-            return;
-        }
-
-        throw LogicException::invalidInstance($class, $name, $instance);
-    }
-
-    private static function populateElements(array $elements): void
-    {
-        $ordinal = 0;
-
-        foreach ($elements as $name => $element) {
-            $element->ordinal = $ordinal;
-            $element->name = $name;
-            $ordinal++;
-        }
-    }
-
-    private static function isValidName(string $name): bool
-    {
-        return array_key_exists($name, self::resolve());
+        return self::$instances[static::class][$name] = $instance;
     }
 
     /**
-     * @inheritDoc
+     * Returns the name of this enum element, exactly as declared in its declaration.
+     *
+     * @return string
      */
-    final public function ordinal(): int
+    public function name(): string
     {
-        if (null === $this->ordinal) {
-            throw LogicException::notAllowedInEnumerate($this, 'ordinal');
-        }
+        return $this->name;
+    }
 
+    /**
+     * Returns the ordinal of this enum element (its position in its declaration, where the initial element is assigned an ordinal of zero).
+     *
+     * @return int
+     */
+    public function ordinal(): int
+    {
         return $this->ordinal;
     }
 
     /**
-     * @inheritDoc
+     * Returns the name of this enum constant, exactly as declared in its declaration.
+     *
+     * @return string
      */
-    final public function toString(): string
+    public function toString(): string
     {
         return $this->name();
     }
 
     /**
-     * @inheritDoc
+     * Returns the name of this enum constant, exactly as declared in its declaration.
+     *
+     * @see Enum::toString()
+     * @return string
      */
-    final public function name(): string
+    public function __toString(): string
     {
-        if (null === $this->name) {
-            throw LogicException::notAllowedInEnumerate($this, 'name');
-        }
-
-        return $this->name;
+        return $this->toString();
     }
 
     /**
-     * @inheritDoc
+     * Determines if this object equals provided value.
+     *
+     * @param mixed $other The other value to compare with.
+     *
+     * @return bool
      */
     public function equals($other): bool
     {
-        /* @var static $other */
-        return InstanceHelper::isOfClass($other, static::class)
-            && $this->name() === $other->name();
+        return $this === $other;
     }
 
     /**
-     * @inheritDoc
+     * Compares this object with with other object. Returns a negative integer, zero or a positive integer as this
+     * object is less than, equals to, or greater then the other object.
+     *
+     * @param ComparableInterface $other The other object to be compared.
+     *
+     * @return int
+     * @throws ClassCastException If the other object's type prevents it from being compared to this object.
      */
     public function compareTo(ComparableInterface $other): int
     {
-        // Make sure other is of same class
+        if ($other instanceof self) {
+
+        }
         InstanceHelper::assertIsOfClass($other, static::class);
 
-        /* @var self $other */
-        return $this->ordinal() <=> $other->ordinal();
+        /** @var static $other */
+        return $this->ordinal() - $other->ordinal();
     }
 
+    /**
+     * @throws CloneNotSupportedException
+     */
+    final public function __clone()
+    {
+        throw CloneNotSupportedException::for($this);
+    }
+
+    /**
+     * @noinspection MagicMethodsValidityInspection
+     * @throws SerializeNotSupportedException
+     */
+    final public function __sleep()
+    {
+        throw SerializeNotSupportedException::for($this);
+    }
+
+    /**
+     * @throws UnserializeNotSupportedException
+     */
+    final public function __wakeup()
+    {
+        throw UnserializeNotSupportedException::for($this);
+    }
 }

@@ -20,3 +20,6 @@ test:
 	@composer validate
 	@composer -- check
 	@composer -- analyse
+
+fix:
+	@composer -- cs-fix

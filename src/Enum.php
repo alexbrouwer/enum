@@ -4,7 +4,6 @@ namespace PAR\Enum;
 
 use PAR\Core\ComparableInterface;
 use PAR\Core\Exception\ClassCastException;
-use PAR\Core\Helper\InstanceHelper;
 use PAR\Core\ObjectInterface;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
@@ -276,13 +275,11 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      */
     public function compareTo(ComparableInterface $other): int
     {
-        if ($other instanceof self) {
-
+        if ($other instanceof self && get_class($other) === static::class) {
+            return $this->ordinal() - $other->ordinal();
         }
-        InstanceHelper::assertIsOfClass($other, static::class);
 
-        /** @var static $other */
-        return $this->ordinal() - $other->ordinal();
+        throw ClassCastException::unexpectedType($other, static::class);
     }
 
     /**

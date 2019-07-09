@@ -12,14 +12,28 @@ clean:
 	@rm -rf vendor .phpunit.result.cache clover.xml
 
 ## Build project
-build:
+build: code/deps/install
 	@composer install --no-interaction
 
 ## Test project
-test:
+test: code/deps/validate code/check code/analyse
+
+## Install dependencies
+code/deps/install:
+	@composer install --no-interaction
+
+## Validate dependencies
+code/deps/validate:
 	@composer validate
+
+## Check code
+code/check:
 	@composer -- check
+
+## Analyse code
+code/analyse:
 	@composer -- analyse
 
-fix:
+## Fix code
+code/fix:
 	@composer -- cs-fix

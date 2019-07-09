@@ -1,6 +1,6 @@
 {
     "name": "par/enum",
-    "description": "Strongly typed enums",
+    "description": "Enum implementation",
     "type": "library",
     "minimum-stability": "dev",
     "prefer-stable": true,

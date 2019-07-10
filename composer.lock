@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "50c6f56c42f4c2c1a39432344ed1298b",
+    "content-hash": "dd1ad60f26245fa76e62323b4ce3cc24",
     "packages": [
         {
             "name": "par/core",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-addition-repository/core.git",
-                "reference": "f90094989a117cc78e662df50d0c357fd45a1f3e"
+                "reference": "511a1e4d3f028a5a5c24d531ed23dba5da177129"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/f90094989a117cc78e662df50d0c357fd45a1f3e",
-                "reference": "f90094989a117cc78e662df50d0c357fd45a1f3e",
+                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/511a1e4d3f028a5a5c24d531ed23dba5da177129",
+                "reference": "511a1e4d3f028a5a5c24d531ed23dba5da177129",
                 "shasum": ""
             },
             "require": {
@@ -40,8 +40,14 @@
             "license": [
                 "MIT"
             ],
+            "authors": [
+                {
+                    "name": "Alex Brouwer",
+                    "role": "lead"
+                }
+            ],
             "description": "Core structures and helpers",
-            "time": "2019-07-09T09:37:53+00:00"
+            "time": "2019-07-10T12:47:23+00:00"
         }
     ],
     "packages-dev": [

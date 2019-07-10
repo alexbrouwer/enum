@@ -3,6 +3,7 @@
 namespace PARTest\Enum;
 
 use PAR\Core\Exception\ClassMismatchException;
+use PAR\Core\PHPUnit\CoreAssertions;
 use PAR\Enum\Enum;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
@@ -19,6 +20,8 @@ use ReflectionClass;
 
 class EnumTest extends TestCase
 {
+    use CoreAssertions;
+
     public function setUp(): void
     {
         // Reset all static properties
@@ -59,13 +62,13 @@ class EnumTest extends TestCase
 
     public function testStrictComparison(): void
     {
-        $this->assertSame(WeekDay::FRIDAY(), WeekDay::FRIDAY());
-        $this->assertNotSame(WeekDay::FRIDAY(), WeekDay::SATURDAY());
+        $this->assertSameObject(WeekDay::FRIDAY(), WeekDay::FRIDAY());
+        $this->assertNotSameObject(WeekDay::FRIDAY(), WeekDay::SATURDAY());
     }
 
     public function testValueOf(): void
     {
-        $this->assertSame(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
+        $this->assertSameObject(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
     }
 
     public function testValueOfWithInvalidName(): void

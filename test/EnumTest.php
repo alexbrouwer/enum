@@ -89,7 +89,8 @@ class EnumTest extends EnumTestCase
                 WeekDay::FRIDAY(),
                 WeekDay::SATURDAY(),
                 WeekDay::SUNDAY(),
-            ], WeekDay::values()
+            ],
+            WeekDay::values()
         );
     }
 

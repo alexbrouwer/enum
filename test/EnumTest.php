@@ -4,71 +4,49 @@ namespace PARTest\Enum;
 
 use PAR\Core\Exception\ClassMismatchException;
 use PAR\Core\PHPUnit\CoreAssertions;
-use PAR\Enum\Enum;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
 use PAR\Enum\Exception\MissingConstantsException;
 use PAR\Enum\Exception\SerializeNotSupportedException;
 use PAR\Enum\Exception\UnknownEnumException;
 use PAR\Enum\Exception\UnserializeNotSupportedException;
+use PAR\Enum\PHPUnit\EnumTestCase;
 use PARTest\Enum\Fixtures\MissingConstantEnum;
 use PARTest\Enum\Fixtures\NonFinalOrAbstractEnum;
 use PARTest\Enum\Fixtures\Planet;
 use PARTest\Enum\Fixtures\WeekDay;
-use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
-class EnumTest extends TestCase
+class EnumTest extends EnumTestCase
 {
     use CoreAssertions;
-
-    public function setUp(): void
-    {
-        // Reset all static properties
-        $reflectionClass = new ReflectionClass(Enum::class);
-
-        $constantsProperty = $reflectionClass->getProperty('configuration');
-        $constantsProperty->setAccessible(true);
-        $constantsProperty->setValue([]);
-
-        $valuesProperty = $reflectionClass->getProperty('instances');
-        $valuesProperty->setAccessible(true);
-        $valuesProperty->setValue([]);
-
-        $allValuesLoadedProperty = $reflectionClass->getProperty('allInstancesLoaded');
-        $allValuesLoadedProperty->setAccessible(true);
-        $allValuesLoadedProperty->setValue([]);
-
-        parent::setUp();
-    }
 
     public function testToString(): void
     {
         $weekday = WeekDay::FRIDAY();
 
         $this->assertSame('FRIDAY', $weekday->toString());
-        $this->assertSame('FRIDAY', (string)$weekday);
+        self::assertSame('FRIDAY', (string)$weekday);
     }
 
     public function testName(): void
     {
-        $this->assertSame('THURSDAY', WeekDay::THURSDAY()->name());
+        self::assertSame('THURSDAY', WeekDay::THURSDAY()->name());
     }
 
     public function testOrdinal(): void
     {
-        $this->assertSame(2, WeekDay::WEDNESDAY()->ordinal());
+        self::assertSame(2, WeekDay::WEDNESDAY()->ordinal());
     }
 
     public function testStrictComparison(): void
     {
-        $this->assertSameObject(WeekDay::FRIDAY(), WeekDay::FRIDAY());
-        $this->assertNotSameObject(WeekDay::FRIDAY(), WeekDay::SATURDAY());
+        self::assertSameObject(WeekDay::FRIDAY(), WeekDay::FRIDAY());
+        self::assertNotSameObject(WeekDay::FRIDAY(), WeekDay::SATURDAY());
     }
 
     public function testValueOf(): void
     {
-        $this->assertSameObject(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
+        self::assertSameObject(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
     }
 
     public function testValueOfWithInvalidName(): void
@@ -120,9 +98,9 @@ class EnumTest extends TestCase
 
     public function testCompareTo(): void
     {
-        $this->assertSame(-4, WeekDay::WEDNESDAY()->compareTo(WeekDay::SUNDAY()));
-        $this->assertSame(4, WeekDay::SUNDAY()->compareTo(WeekDay::WEDNESDAY()));
-        $this->assertSame(0, WeekDay::WEDNESDAY()->compareTo(WeekDay::WEDNESDAY()));
+        self::assertSame(-4, WeekDay::WEDNESDAY()->compareTo(WeekDay::SUNDAY()));
+        self::assertSame(4, WeekDay::SUNDAY()->compareTo(WeekDay::WEDNESDAY()));
+        self::assertSame(0, WeekDay::WEDNESDAY()->compareTo(WeekDay::WEDNESDAY()));
     }
 
     public function testCompareToWrongType(): void
@@ -136,8 +114,8 @@ class EnumTest extends TestCase
     {
         $planet = Planet::EARTH();
 
-        $this->assertSame(5.976e+24, $planet->mass());
-        $this->assertSame(6.37814e6, $planet->radius());
+        self::assertSame(5.976e+24, $planet->mass());
+        self::assertSame(6.37814e6, $planet->radius());
     }
 
     public function testNonAbstractOrFinalEnumThrowsException(): void

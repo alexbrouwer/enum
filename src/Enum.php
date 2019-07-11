@@ -130,7 +130,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
 
         self::$allInstancesLoaded[static::class] = true;
 
-        return self::$instances[static::class];
+        return array_values(self::$instances[static::class]);
     }
 
     /**

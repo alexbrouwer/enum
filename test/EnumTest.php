@@ -78,9 +78,24 @@ class EnumTest extends EnumTestCase
         unserialize(sprintf('O:%d:"%s":0:{}', strlen(WeekDay::class), WeekDay::class));
     }
 
+    public function testValues(): void
+    {
+        $this->assertSame(
+            [
+                WeekDay::MONDAY(),
+                WeekDay::TUESDAY(),
+                WeekDay::WEDNESDAY(),
+                WeekDay::THURSDAY(),
+                WeekDay::FRIDAY(),
+                WeekDay::SATURDAY(),
+                WeekDay::SUNDAY(),
+            ], WeekDay::values()
+        );
+    }
+
     public function testReturnValueOfValuesIsSortedByOrdinal(): void
     {
-        // Initialize some out of orders
+        // Initialize some out of order
         WeekDay::SATURDAY();
         WeekDay::TUESDAY();
 

@@ -2,12 +2,10 @@
 
 namespace PAR\Enum\Exception;
 
-use PAR\Enum\Enumerable;
-
 final class CloneNotSupportedException extends BadMethodCallException
 {
-    public static function for(Enumerable $enumerable): self
+    public static function for(object $object): self
     {
-        return new self(sprintf('Clone is not supported for enum %s', get_class($enumerable)));
+        return new self(sprintf('Clone is not supported for %s', get_class($object)));
     }
 }

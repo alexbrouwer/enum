@@ -85,7 +85,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
      * @param string $valueType
      * @param bool   $allowNullValues
      */
-    public function __construct(string $keyType, string $valueType, bool $allowNullValues)
+    private function __construct(string $keyType, string $valueType, bool $allowNullValues)
     {
         if (!is_subclass_of($keyType, Enum::class)) {
             throw new InvalidArgumentException(

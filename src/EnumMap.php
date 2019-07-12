@@ -111,7 +111,10 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
 
         $this->valueType = $valueType;
         $this->allowNullValues = $allowNullValues;
-        $this->keyUniverse = forward_static_call([$keyType, 'values']);
+
+        /** @var callable $callable */
+        $callable = [$keyType, 'values'];
+        $this->keyUniverse = $callable();
         $this->values = array_fill(0, count($this->keyUniverse), null);
     }
 
@@ -401,5 +404,4 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
 
         return $value;
     }
-
 }

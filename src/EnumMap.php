@@ -10,16 +10,17 @@ use Traversable;
 
 final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
 {
-    const TYPE_MIXED = 'mixed';
-    const TYPE_BOOL = 'bool';
-    const TYPE_BOOLEAN = 'boolean';
-    const TYPE_INT = 'int';
-    const TYPE_INTEGER = 'integer';
-    const TYPE_FLOAT = 'float';
-    const TYPE_DOUBLE = 'double';
-    const TYPE_STRING = 'string';
-    const TYPE_OBJECT = 'object';
-    const TYPE_ARRAY = 'array';
+    private const TYPE_MIXED = 'mixed';
+    private const TYPE_BOOL = 'bool';
+    private const TYPE_BOOLEAN = 'boolean';
+    private const TYPE_INT = 'int';
+    private const TYPE_INTEGER = 'integer';
+    private const TYPE_FLOAT = 'float';
+    private const TYPE_DOUBLE = 'double';
+    private const TYPE_STRING = 'string';
+    private const TYPE_OBJECT = 'object';
+    private const TYPE_ARRAY = 'array';
+
     /**
      * @var array<string>
      */

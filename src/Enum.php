@@ -41,17 +41,6 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
     private $ordinal;
 
     /**
-     * The constructor is private by default to avoid arbitrary enum creation.
-     *
-     * When creating your own constructor for a parameterized enum, make sure to declare it as protected, so that the
-     * static methods are able to construct it. Do not make it public, as that would allow creation of non-singleton
-     * enum instances.
-     */
-    private function __construct()
-    {
-    }
-
-    /**
      * Maps static methods calls to instances.
      *
      * @param string $name      The name of the instance.
@@ -131,6 +120,17 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
         self::$allInstancesLoaded[static::class] = true;
 
         return array_values(self::$instances[static::class]);
+    }
+
+    /**
+     * The constructor is private by default to avoid arbitrary enum creation.
+     *
+     * When creating your own constructor for a parameterized enum, make sure to declare it as protected, so that the
+     * static methods are able to construct it. Do not make it public, as that would allow creation of non-singleton
+     * enum instances.
+     */
+    private function __construct()
+    {
     }
 
     /**
@@ -261,7 +261,11 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      */
     public function equals($other): bool
     {
-        return $this === $other;
+        if ($other instanceof self && get_class($other) === static::class) {
+            return $this->ordinal === $other->ordinal;
+        }
+
+        return false;
     }
 
     /**

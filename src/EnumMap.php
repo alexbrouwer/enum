@@ -20,6 +20,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     private const TYPE_STRING = 'string';
     private const TYPE_OBJECT = 'object';
     private const TYPE_ARRAY = 'array';
+    private const TYPE_CALLABLE = 'callable';
 
     /**
      * @var array<string>
@@ -35,6 +36,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
         self::TYPE_STRING,
         self::TYPE_OBJECT,
         self::TYPE_ARRAY,
+        self::TYPE_CALLABLE,
     ];
 
     /**
@@ -82,51 +84,84 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     }
 
     /**
-     * @param string $keyType
-     * @param string $valueType
-     * @param bool   $allowNullValues
+     * Removes all mappings from this map.
      */
-    private function __construct(string $keyType, string $valueType, bool $allowNullValues)
+    public function clear(): void
     {
-        if (!is_subclass_of($keyType, Enum::class)) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'Class %s does not extend %s',
-                    $keyType,
-                    Enum::class
-                )
-            );
-        }
-
-        $this->keyType = $keyType;
-
-        if (!in_array($valueType, self::$valueTypes, true) && !class_exists($valueType)) {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'Unknown value type %s, expected one of [%s] or existing class',
-                    $valueType,
-                    implode(',', self::$valueTypes)
-                )
-            );
-        }
-
-        $this->valueType = $valueType;
-        $this->allowNullValues = $allowNullValues;
-
-        /** @var callable $callable */
-        $callable = [$keyType, 'values'];
-        $this->keyUniverse = $callable();
         $this->values = array_fill(0, count($this->keyUniverse), null);
+        $this->size = 0;
     }
 
     /**
-     * Returns the number of key-value mappings in this map
+     * Assert if key is mapped in map.
      *
-     * @return int
+     * @param Enum $key
+     *
+     * @return bool
+     * @throws InvalidArgumentException If an invalid key type is provided
      */
-    public function size(): int
+    public function containsKey(Enum $key): bool
     {
-        return $this->size;
+        $this->checkKeyType($key);
+
+        return null !== $this->values[$key->ordinal()];
+    }
+
+    /**
+     * Assert if value is present in map
+     *
+     * @param mixed $value The value to find
+     *
+     * @return bool
+     */
+    public function containsValue($value): bool
+    {
+        return in_array($this->maskNull($value), $this->values, true);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function equals($other): bool
+    {
+        if ($this === $other) {
+            return true;
+        }
+
+        if ($other instanceof self && get_class($other) === static::class) {
+            return $this->size === $other->size && $this->values === $other->values;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key.
+     *
+     * @param Enum $key The key to retrieve a value for
+     *
+     * @return mixed
+     * @throws InvalidArgumentException If an invalid key type is provided
+     */
+    public function get(Enum $key)
+    {
+        $this->checkKeyType($key);
+
+        return $this->unmaskNull($this->values[$key->ordinal()]);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getIterator(): Traversable
+    {
+        foreach ($this->keyUniverse as $key) {
+            if (null === $this->values[$key->ordinal()]) {
+                continue;
+            }
+
+            yield $key => $this->unmaskNull($this->values[$key->ordinal()]);
+        }
     }
 
     /**
@@ -158,48 +193,6 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     }
 
     /**
-     * Assert if value is present in map
-     *
-     * @param mixed $value The value to find
-     *
-     * @return bool
-     */
-    public function containsValue($value): bool
-    {
-        return in_array($this->maskNull($value), $this->values, true);
-    }
-
-    /**
-     * Assert if key is mapped in map.
-     *
-     * @param Enum $key
-     *
-     * @return bool
-     * @throws InvalidArgumentException If an invalid key type is provided
-     */
-    public function containsKey(Enum $key): bool
-    {
-        $this->checkKeyType($key);
-
-        return null !== $this->values[$key->ordinal()];
-    }
-
-    /**
-     * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key.
-     *
-     * @param Enum $key The key to retrieve a value for
-     *
-     * @return mixed
-     * @throws InvalidArgumentException If an invalid key type is provided
-     */
-    public function get(Enum $key)
-    {
-        $this->checkKeyType($key);
-
-        return $this->unmaskNull($this->values[$key->ordinal()]);
-    }
-
-    /**
      * Removes the mapping for this key from this map if present.
      *
      * @param Enum $key The key to remove
@@ -217,78 +210,6 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
         }
 
         return $this->unmaskNull($oldValue);
-    }
-
-    /**
-     * Returns the values contained in this map.
-     *
-     * The array will contain the values in the order their corresponding keys appear in the map, which is their natural
-     * order (the order in which the num constants are declared).
-     *
-     * @return array
-     */
-    public function values(): array
-    {
-        return array_values(
-            array_map(
-                function ($value) {
-                    return $this->unmaskNull($value);
-                },
-                array_filter(
-                    $this->values,
-                    static function ($value): bool {
-                        return null !== $value;
-                    }
-                )
-            )
-        );
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function equals($other): bool
-    {
-        if ($this === $other) {
-            return true;
-        }
-
-        if ($other instanceof self && get_class($other) === static::class) {
-            return $this->size === $other->size && $this->values === $other->values;
-        }
-
-        return false;
-    }
-
-    /**
-     * Removes all mappings from this map.
-     */
-    public function clear(): void
-    {
-        $this->values = array_fill(0, count($this->keyUniverse), null);
-        $this->size = 0;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function toString(): string
-    {
-        return sprintf('<%s,%s%s>', $this->keyType, $this->allowNullValues ? '?' : '', $this->valueType);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getIterator(): Traversable
-    {
-        foreach ($this->keyUniverse as $key) {
-            if (null === $this->values[$key->ordinal()]) {
-                continue;
-            }
-
-            yield $key => $this->unmaskNull($this->values[$key->ordinal()]);
-        }
     }
 
     /**
@@ -315,6 +236,24 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     }
 
     /**
+     * Returns the number of key-value mappings in this map
+     *
+     * @return int
+     */
+    public function size(): int
+    {
+        return $this->size;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function toString(): string
+    {
+        return sprintf('<%s,%s%s>', $this->keyType, $this->allowNullValues ? '?' : '', $this->valueType);
+    }
+
+    /**
      * @inheritDoc
      */
     public function unserialize($serialized): void
@@ -326,6 +265,31 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
                 $this->put($key, $data['values'][$key->ordinal()]);
             }
         }
+    }
+
+    /**
+     * Returns the values contained in this map.
+     *
+     * The array will contain the values in the order their corresponding keys appear in the map, which is their natural
+     * order (the order in which the num constants are declared).
+     *
+     * @return array<int>
+     */
+    public function values(): array
+    {
+        return array_values(
+            array_map(
+                function ($value) {
+                    return $this->unmaskNull($value);
+                },
+                array_filter(
+                    $this->values,
+                    static function ($value): bool {
+                        return null !== $value;
+                    }
+                )
+            )
+        );
     }
 
     private function checkKeyType(Enum $key): void
@@ -369,6 +333,8 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
                 return is_object($value);
             case self::TYPE_ARRAY:
                 return is_array($value);
+            case self::TYPE_CALLABLE:
+                return is_callable($value);
         }
 
         return $value instanceof $this->valueType;
@@ -404,5 +370,43 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
         }
 
         return $value;
+    }
+
+    /**
+     * @param string $keyType
+     * @param string $valueType
+     * @param bool   $allowNullValues
+     */
+    private function __construct(string $keyType, string $valueType, bool $allowNullValues)
+    {
+        if (!is_subclass_of($keyType, Enum::class)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Class %s does not extend %s',
+                    $keyType,
+                    Enum::class
+                )
+            );
+        }
+
+        $this->keyType = $keyType;
+
+        if (!in_array($valueType, self::$valueTypes, true) && !class_exists($valueType)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'Unknown value type %s, expected one of [%s] or existing class',
+                    $valueType,
+                    implode(',', self::$valueTypes)
+                )
+            );
+        }
+
+        $this->valueType = $valueType;
+        $this->allowNullValues = $allowNullValues;
+
+        /** @var callable $callable */
+        $callable = [$keyType, 'values'];
+        $this->keyUniverse = $callable();
+        $this->values = array_fill(0, count($this->keyUniverse), null);
     }
 }

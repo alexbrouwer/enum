@@ -4,17 +4,17 @@ namespace PAR\Enum;
 
 use PAR\Core\ComparableInterface;
 use PAR\Core\Exception\ClassMismatchException;
+use PAR\Core\Helper\ClassHelper;
 use PAR\Core\ObjectCastToString;
 use PAR\Core\ObjectInterface;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
 use PAR\Enum\Exception\MissingConstantsException;
-use PAR\Enum\Exception\SerializeNotSupportedException;
 use PAR\Enum\Exception\UnknownEnumException;
-use PAR\Enum\Exception\UnserializeNotSupportedException;
 use ReflectionClass;
+use Serializable;
 
-abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
+abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface, Serializable
 {
     use ObjectCastToString;
 
@@ -134,23 +134,6 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
     }
 
     /**
-     * @noinspection MagicMethodsValidityInspection
-     * @throws SerializeNotSupportedException
-     */
-    final public function __sleep()
-    {
-        throw SerializeNotSupportedException::for($this);
-    }
-
-    /**
-     * @throws UnserializeNotSupportedException
-     */
-    final public function __wakeup()
-    {
-        throw UnserializeNotSupportedException::for($this);
-    }
-
-    /**
      * Compares this object with with other object. Returns a negative integer, zero or a positive integer as this
      * object is less than, equals to, or greater then the other object.
      *
@@ -159,7 +142,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      * @return int
      * @throws ClassMismatchException If the other object's type prevents it from being compared to this object.
      */
-    public function compareTo(ComparableInterface $other): int
+    final public function compareTo(ComparableInterface $other): int
     {
         if ($other instanceof self && get_class($other) === static::class) {
             return $this->ordinal() - $other->ordinal();
@@ -175,7 +158,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      *
      * @return bool
      */
-    public function equals($other): bool
+    final public function equals($other): bool
     {
         if ($other instanceof self && get_class($other) === static::class) {
             return $this->ordinal === $other->ordinal;
@@ -189,7 +172,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      *
      * @return string
      */
-    public function name(): string
+    final public function name(): string
     {
         return $this->name;
     }
@@ -199,9 +182,17 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      *
      * @return int
      */
-    public function ordinal(): int
+    final public function ordinal(): int
     {
         return $this->ordinal;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    final public function serialize()
+    {
+        return $this->name();
     }
 
     /**
@@ -209,9 +200,36 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
      *
      * @return string
      */
-    public function toString(): string
+    final public function toString(): string
     {
         return $this->name();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    final public function unserialize($serialized)
+    {
+        $configuration = self::configuration();
+
+        if (!array_key_exists($serialized, $configuration)) {
+            throw UnknownEnumException::withName(static::class, $serialized);
+        }
+
+        [$ordinal, $arguments] = $configuration[$serialized];
+
+        $this->name = $serialized;
+        $this->ordinal = $ordinal;
+
+        if (!empty($arguments)) {
+            $reflectionClass = ClassHelper::getReflectionClass(static::class);
+            $constructor = $reflectionClass->getConstructor();
+            if ($constructor->getParameters()) {
+                $constructor->setAccessible(true);
+                $constructor->invokeArgs($this, $arguments);
+                $constructor->setAccessible(false);
+            }
+        }
     }
 
     /**

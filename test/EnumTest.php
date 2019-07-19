@@ -7,9 +7,7 @@ use PAR\Core\PHPUnit\CoreAssertions;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
 use PAR\Enum\Exception\MissingConstantsException;
-use PAR\Enum\Exception\SerializeNotSupportedException;
 use PAR\Enum\Exception\UnknownEnumException;
-use PAR\Enum\Exception\UnserializeNotSupportedException;
 use PAR\Enum\PHPUnit\EnumTestCase;
 use PARTest\Enum\Fixtures\MissingConstantEnum;
 use PARTest\Enum\Fixtures\NonFinalOrAbstractEnum;
@@ -20,34 +18,11 @@ class EnumTest extends EnumTestCase
 {
     use CoreAssertions;
 
-    public function testToString(): void
+    public function testAllMethodsMustHaveAConstant(): void
     {
-        $weekday = WeekDay::FRIDAY();
+        $this->expectException(MissingConstantsException::class);
 
-        $this->assertSame('FRIDAY', $weekday->toString());
-        self::assertSame('FRIDAY', (string)$weekday);
-    }
-
-    public function testName(): void
-    {
-        self::assertSame('THURSDAY', WeekDay::THURSDAY()->name());
-    }
-
-    public function testOrdinal(): void
-    {
-        self::assertSame(2, WeekDay::WEDNESDAY()->ordinal());
-    }
-
-    public function testValueOf(): void
-    {
-        self::assertValueEquality(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
-    }
-
-    public function testValueOfWithInvalidName(): void
-    {
-        $this->expectException(UnknownEnumException::class);
-
-        WeekDay::valueOf('MAANDAG');
+        MissingConstantEnum::values();
     }
 
     public function testCloneNotSupported(): void
@@ -58,34 +33,43 @@ class EnumTest extends EnumTestCase
         clone WeekDay::FRIDAY();
     }
 
-    public function testSerializeNotSupported(): void
+    public function testCompareTo(): void
     {
-        $this->expectException(SerializeNotSupportedException::class);
-
-        serialize(WeekDay::FRIDAY());
+        self::assertSame(-4, WeekDay::WEDNESDAY()->compareTo(WeekDay::SUNDAY()));
+        self::assertSame(4, WeekDay::SUNDAY()->compareTo(WeekDay::WEDNESDAY()));
+        self::assertSame(0, WeekDay::WEDNESDAY()->compareTo(WeekDay::WEDNESDAY()));
     }
 
-    public function testUnserializeNotSupported(): void
+    public function testCompareToWrongType(): void
     {
-        $this->expectException(UnserializeNotSupportedException::class);
+        $this->expectException(ClassMismatchException::class);
 
-        unserialize(sprintf('O:%d:"%s":0:{}', strlen(WeekDay::class), WeekDay::class));
+        WeekDay::MONDAY()->compareTo(Planet::EARTH());
     }
 
-    public function testValues(): void
+    public function testName(): void
     {
-        $this->assertSame(
-            [
-                WeekDay::MONDAY(),
-                WeekDay::TUESDAY(),
-                WeekDay::WEDNESDAY(),
-                WeekDay::THURSDAY(),
-                WeekDay::FRIDAY(),
-                WeekDay::SATURDAY(),
-                WeekDay::SUNDAY(),
-            ],
-            WeekDay::values()
-        );
+        self::assertSame('THURSDAY', WeekDay::THURSDAY()->name());
+    }
+
+    public function testNonAbstractOrFinalEnumThrowsException(): void
+    {
+        $this->expectException(InvalidClassException::class);
+
+        NonFinalOrAbstractEnum::values();
+    }
+
+    public function testOrdinal(): void
+    {
+        self::assertSame(2, WeekDay::WEDNESDAY()->ordinal());
+    }
+
+    public function testParameterizedEnum(): void
+    {
+        $planet = Planet::EARTH();
+
+        self::assertSame(5.976e+24, $planet->mass());
+        self::assertSame(6.37814e6, $planet->radius());
     }
 
     public function testReturnValueOfValuesIsSortedByOrdinal(): void
@@ -106,39 +90,58 @@ class EnumTest extends EnumTestCase
         self::assertSame([0, 1, 2, 3, 4, 5, 6], $ordinals);
     }
 
-    public function testCompareTo(): void
+    public function testSerialization(): void
     {
-        self::assertSame(-4, WeekDay::WEDNESDAY()->compareTo(WeekDay::SUNDAY()));
-        self::assertSame(4, WeekDay::SUNDAY()->compareTo(WeekDay::WEDNESDAY()));
-        self::assertSame(0, WeekDay::WEDNESDAY()->compareTo(WeekDay::WEDNESDAY()));
+        $expected = Planet::MARS();
+        $serialized = serialize($expected);
+
+        $result = unserialize($serialized);
+
+        self::assertValueEquality($expected, $result);
     }
 
-    public function testCompareToWrongType(): void
+    public function testUnserializeThrowsExceptionWhenInvalidString(): void
     {
-        $this->expectException(ClassMismatchException::class);
+        $serialized = 'C:29:"PARTest\Enum\Fixtures\WeekDay":7:{VRIJDAG}';
 
-        WeekDay::MONDAY()->compareTo(Planet::EARTH());
+        $this->expectException(UnknownEnumException::class);
+
+        unserialize($serialized);
     }
 
-    public function testParameterizedEnum(): void
+    public function testToString(): void
     {
-        $planet = Planet::EARTH();
+        $weekday = WeekDay::FRIDAY();
 
-        self::assertSame(5.976e+24, $planet->mass());
-        self::assertSame(6.37814e6, $planet->radius());
+        $this->assertSame('FRIDAY', $weekday->toString());
+        self::assertSame('FRIDAY', (string)$weekday);
     }
 
-    public function testNonAbstractOrFinalEnumThrowsException(): void
+    public function testValueOf(): void
     {
-        $this->expectException(InvalidClassException::class);
-
-        NonFinalOrAbstractEnum::values();
+        self::assertValueEquality(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
     }
 
-    public function testAllMethodsMustHaveAConstant(): void
+    public function testValueOfWithInvalidName(): void
     {
-        $this->expectException(MissingConstantsException::class);
+        $this->expectException(UnknownEnumException::class);
 
-        MissingConstantEnum::values();
+        WeekDay::valueOf('MAANDAG');
+    }
+
+    public function testValues(): void
+    {
+        $this->assertSame(
+            [
+                WeekDay::MONDAY(),
+                WeekDay::TUESDAY(),
+                WeekDay::WEDNESDAY(),
+                WeekDay::THURSDAY(),
+                WeekDay::FRIDAY(),
+                WeekDay::SATURDAY(),
+                WeekDay::SUNDAY(),
+            ],
+            WeekDay::values()
+        );
     }
 }

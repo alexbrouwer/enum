@@ -38,15 +38,9 @@ class EnumTest extends EnumTestCase
         self::assertSame(2, WeekDay::WEDNESDAY()->ordinal());
     }
 
-    public function testStrictComparison(): void
-    {
-        self::assertSameObject(WeekDay::FRIDAY(), WeekDay::FRIDAY());
-        self::assertNotSameObject(WeekDay::FRIDAY(), WeekDay::SATURDAY());
-    }
-
     public function testValueOf(): void
     {
-        self::assertSameObject(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
+        self::assertValueEquality(WeekDay::SUNDAY(), WeekDay::valueOf('SUNDAY'));
     }
 
     public function testValueOfWithInvalidName(): void

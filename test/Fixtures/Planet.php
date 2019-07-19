@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PARTest\Enum\Fixtures;
 
@@ -44,6 +44,8 @@ final class Planet extends Enum
 
     protected function __construct(float $mass, float $radius)
     {
+        parent::__construct();
+
         $this->mass = $mass;
         $this->radius = $radius;
     }

@@ -1,8 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PAR\Enum;
 
 use IteratorAggregate;
+use PAR\Core\ObjectCastToString;
 use PAR\Core\ObjectInterface;
 use PAR\Enum\Exception\InvalidArgumentException;
 use Serializable;
@@ -10,6 +11,8 @@ use Traversable;
 
 final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
 {
+    use ObjectCastToString;
+
     private const TYPE_MIXED = 'mixed';
     private const TYPE_BOOL = 'bool';
     private const TYPE_BOOLEAN = 'boolean';

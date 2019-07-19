@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "23a11b2dfd66cafa4b98ccdef7fa542d",
+    "content-hash": "b2861b053eb7d6d978726c827fe2a2d9",
     "packages": [
         {
             "name": "par/core",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-addition-repository/core.git",
-                "reference": "511a1e4d3f028a5a5c24d531ed23dba5da177129"
+                "reference": "c13c8ae21031c2da7ca28ef905c51812b5a25705"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/511a1e4d3f028a5a5c24d531ed23dba5da177129",
-                "reference": "511a1e4d3f028a5a5c24d531ed23dba5da177129",
+                "url": "https://api.github.com/repos/php-addition-repository/core/zipball/c13c8ae21031c2da7ca28ef905c51812b5a25705",
+                "reference": "c13c8ae21031c2da7ca28ef905c51812b5a25705",
                 "shasum": ""
             },
             "require": {
@@ -47,7 +47,7 @@
                 }
             ],
             "description": "Core structures and helpers",
-            "time": "2019-07-10T12:47:23+00:00"
+            "time": "2019-07-19T09:33:03+00:00"
         }
     ],
     "packages-dev": [

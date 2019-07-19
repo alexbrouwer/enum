@@ -1,7 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace PARTest\Enum;
 
+use PAR\Enum\Enum;
 use PAR\Enum\EnumMap;
 use PAR\Enum\Exception\InvalidArgumentException;
 use PARTest\Enum\Fixtures\Planet;
@@ -119,6 +120,11 @@ class EnumMapTest extends TestCase
         $map->put(WeekDay::TUESDAY(), 'bar');
         $map->put(WeekDay::SUNDAY(), null);
         $result = [];
+
+        /**
+         * @var Enum        $key
+         * @var string|null $value
+         */
         foreach ($map as $key => $value) {
             $result[$key->ordinal()] = $value;
         }

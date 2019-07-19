@@ -4,6 +4,7 @@ namespace PAR\Enum;
 
 use PAR\Core\ComparableInterface;
 use PAR\Core\Exception\ClassMismatchException;
+use PAR\Core\ObjectCastToString;
 use PAR\Core\ObjectInterface;
 use PAR\Enum\Exception\CloneNotSupportedException;
 use PAR\Enum\Exception\InvalidClassException;
@@ -15,6 +16,8 @@ use ReflectionClass;
 
 abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
 {
+    use ObjectCastToString;
+
     /**
      * @var array<string, array<int, array>>
      */
@@ -123,14 +126,92 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
     }
 
     /**
-     * The constructor is private by default to avoid arbitrary enum creation.
-     *
-     * When creating your own constructor for a parameterized enum, make sure to declare it as protected, so that the
-     * static methods are able to construct it. Do not make it public, as that would allow creation of non-singleton
-     * enum instances.
+     * @throws CloneNotSupportedException
      */
-    private function __construct()
+    final public function __clone()
     {
+        throw CloneNotSupportedException::for($this);
+    }
+
+    /**
+     * @noinspection MagicMethodsValidityInspection
+     * @throws SerializeNotSupportedException
+     */
+    final public function __sleep()
+    {
+        throw SerializeNotSupportedException::for($this);
+    }
+
+    /**
+     * @throws UnserializeNotSupportedException
+     */
+    final public function __wakeup()
+    {
+        throw UnserializeNotSupportedException::for($this);
+    }
+
+    /**
+     * Compares this object with with other object. Returns a negative integer, zero or a positive integer as this
+     * object is less than, equals to, or greater then the other object.
+     *
+     * @param ComparableInterface $other The other object to be compared.
+     *
+     * @return int
+     * @throws ClassMismatchException If the other object's type prevents it from being compared to this object.
+     */
+    public function compareTo(ComparableInterface $other): int
+    {
+        if ($other instanceof self && get_class($other) === static::class) {
+            return $this->ordinal() - $other->ordinal();
+        }
+
+        throw ClassMismatchException::expectedInstance($this, $other);
+    }
+
+    /**
+     * Determines if this object equals provided value.
+     *
+     * @param mixed $other The other value to compare with.
+     *
+     * @return bool
+     */
+    public function equals($other): bool
+    {
+        if ($other instanceof self && get_class($other) === static::class) {
+            return $this->ordinal === $other->ordinal;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the name of this enum element, exactly as declared in its declaration.
+     *
+     * @return string
+     */
+    public function name(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * Returns the ordinal of this enum element (its position in its declaration, where the initial element is assigned an ordinal of zero).
+     *
+     * @return int
+     */
+    public function ordinal(): int
+    {
+        return $this->ordinal;
+    }
+
+    /**
+     * Returns the name of this enum constant, exactly as declared in its declaration.
+     *
+     * @return string
+     */
+    public function toString(): string
+    {
+        return $this->name();
     }
 
     /**
@@ -212,102 +293,13 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface
     }
 
     /**
-     * Returns the name of this enum element, exactly as declared in its declaration.
+     * The constructor is private by default to avoid arbitrary enum creation.
      *
-     * @return string
+     * When creating your own constructor for a parameterized enum, make sure to declare it as protected, so that the
+     * static methods are able to construct it. Do not make it public, as that would allow creation of non-singleton
+     * enum instances.
      */
-    public function name(): string
+    protected function __construct()
     {
-        return $this->name;
-    }
-
-    /**
-     * Returns the ordinal of this enum element (its position in its declaration, where the initial element is assigned an ordinal of zero).
-     *
-     * @return int
-     */
-    public function ordinal(): int
-    {
-        return $this->ordinal;
-    }
-
-    /**
-     * Returns the name of this enum constant, exactly as declared in its declaration.
-     *
-     * @return string
-     */
-    public function toString(): string
-    {
-        return $this->name();
-    }
-
-    /**
-     * Returns the name of this enum constant, exactly as declared in its declaration.
-     *
-     * @see Enum::toString()
-     * @return string
-     */
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Determines if this object equals provided value.
-     *
-     * @param mixed $other The other value to compare with.
-     *
-     * @return bool
-     */
-    public function equals($other): bool
-    {
-        if ($other instanceof self && get_class($other) === static::class) {
-            return $this->ordinal === $other->ordinal;
-        }
-
-        return false;
-    }
-
-    /**
-     * Compares this object with with other object. Returns a negative integer, zero or a positive integer as this
-     * object is less than, equals to, or greater then the other object.
-     *
-     * @param ComparableInterface $other The other object to be compared.
-     *
-     * @return int
-     * @throws ClassMismatchException If the other object's type prevents it from being compared to this object.
-     */
-    public function compareTo(ComparableInterface $other): int
-    {
-        if ($other instanceof self && get_class($other) === static::class) {
-            return $this->ordinal() - $other->ordinal();
-        }
-
-        throw ClassMismatchException::expectedInstance($this, $other);
-    }
-
-    /**
-     * @throws CloneNotSupportedException
-     */
-    final public function __clone()
-    {
-        throw CloneNotSupportedException::for($this);
-    }
-
-    /**
-     * @noinspection MagicMethodsValidityInspection
-     * @throws SerializeNotSupportedException
-     */
-    final public function __sleep()
-    {
-        throw SerializeNotSupportedException::for($this);
-    }
-
-    /**
-     * @throws UnserializeNotSupportedException
-     */
-    final public function __wakeup()
-    {
-        throw UnserializeNotSupportedException::for($this);
     }
 }

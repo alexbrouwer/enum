@@ -86,7 +86,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     private $size = 0;
 
     /**
-     * @param string $keyType         FQCN implementing Enumerable
+     * @param string $keyType         Classname implementing Enumerable
      * @param string $valueType       Value type for values
      * @param bool   $allowNullValues True to allow NULL
      *

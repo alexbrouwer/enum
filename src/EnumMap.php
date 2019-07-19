@@ -41,6 +41,10 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
         self::TYPE_ARRAY,
         self::TYPE_CALLABLE,
     ];
+    /**
+     * @var null|NullValue
+     */
+    private static $null;
 
     /**
      * The class name of the key
@@ -64,7 +68,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     /**
      * All of the possible keys, cached for performance
      *
-     * @var array<int, Enum>
+     * @var array<int, Enumerable>
      */
     private $keyUniverse;
 
@@ -81,6 +85,13 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
      */
     private $size = 0;
 
+    /**
+     * @param string $keyType         FQCN implementing Enumerable
+     * @param string $valueType       Value type for values
+     * @param bool   $allowNullValues True to allow NULL
+     *
+     * @return EnumMap
+     */
     public static function for(string $keyType, string $valueType, bool $allowNullValues): self
     {
         return new self($keyType, $valueType, $allowNullValues);
@@ -98,12 +109,12 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     /**
      * Assert if key is mapped in map.
      *
-     * @param Enum $key
+     * @param Enumerable $key
      *
      * @return bool
      * @throws InvalidArgumentException If an invalid key type is provided
      */
-    public function containsKey(Enum $key): bool
+    public function containsKey(Enumerable $key): bool
     {
         $this->checkKeyType($key);
 
@@ -141,12 +152,12 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     /**
      * Returns the value to which the specified key is mapped, or null if this map contains no mapping for the key.
      *
-     * @param Enum $key The key to retrieve a value for
+     * @param Enumerable $key The key to retrieve a value for
      *
      * @return mixed
      * @throws InvalidArgumentException If an invalid key type is provided
      */
-    public function get(Enum $key)
+    public function get(Enumerable $key)
     {
         $this->checkKeyType($key);
 
@@ -168,14 +179,14 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     }
 
     /**
-     * @param Enum  $key   The key to change
-     * @param mixed $value The value to set
+     * @param Enumerable $key   The key to change
+     * @param mixed      $value The value to set
      *
      * @return mixed The previous value associated with the specified key, or null if there was no mapping for the key.
      * @throws InvalidArgumentException If the passed key does not match the key type
      * @throws InvalidArgumentException If the passed value does not match the value type
      */
-    public function put(Enum $key, $value)
+    public function put(Enumerable $key, $value)
     {
         $this->checkKeyType($key);
 
@@ -198,11 +209,11 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     /**
      * Removes the mapping for this key from this map if present.
      *
-     * @param Enum $key The key to remove
+     * @param Enumerable $key The key to remove
      *
      * @return mixed The previous value associated with the specified key, or null if there was no mapping for the key.
      */
-    public function remove(Enum $key)
+    public function remove(Enumerable $key)
     {
         $this->checkKeyType($key);
         $index = $key->ordinal();
@@ -295,7 +306,18 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
         );
     }
 
-    private function checkKeyType(Enum $key): void
+    private static function null(): object
+    {
+        if (!self::$null) {
+            self::$null = new class()
+            {
+            };
+        }
+
+        return self::$null;
+    }
+
+    private function checkKeyType(Enumerable $key): void
     {
         if (get_class($key) !== $this->keyType) {
             throw new InvalidArgumentException(
@@ -353,7 +375,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     private function maskNull($value)
     {
         if (null === $value) {
-            return NullValue::instance();
+            return self::null();
         }
 
         return $value;
@@ -368,7 +390,8 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
      */
     private function unmaskNull($value)
     {
-        if ($value instanceof NullValue) {
+        $null = self::null();
+        if ($value instanceof $null) {
             return null;
         }
 
@@ -382,12 +405,12 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
      */
     private function __construct(string $keyType, string $valueType, bool $allowNullValues)
     {
-        if (!is_subclass_of($keyType, Enum::class)) {
+        if (!in_array(Enumerable::class, class_implements($keyType), true)) {
             throw new InvalidArgumentException(
                 sprintf(
-                    'Class %s does not extend %s',
+                    'Class %s does not implement %s',
                     $keyType,
-                    Enum::class
+                    Enumerable::class
                 )
             );
         }

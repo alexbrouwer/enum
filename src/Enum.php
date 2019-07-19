@@ -224,7 +224,7 @@ abstract class Enum implements Enumerable, ObjectInterface, ComparableInterface,
         if (!empty($arguments)) {
             $reflectionClass = ClassHelper::getReflectionClass(static::class);
             $constructor = $reflectionClass->getConstructor();
-            if ($constructor->getParameters()) {
+            if ($constructor && $constructor->getParameters()) {
                 $constructor->setAccessible(true);
                 $constructor->invokeArgs($this, $arguments);
                 $constructor->setAccessible(false);

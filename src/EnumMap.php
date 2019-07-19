@@ -309,7 +309,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
     private static function null(): object
     {
         if (!self::$null) {
-            self::$null = new class()
+            self::$null = new class() implements NullValue
             {
             };
         }

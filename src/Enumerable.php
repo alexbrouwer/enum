@@ -1,9 +1,10 @@
-<?php declare(strict_types=1);
+<?php declare( strict_types=1 );
 
 namespace PAR\Enum;
 
-interface Enumerable
-{
+use PAR\Enum\Exception\InvalidEnumDefinition;
+
+interface Enumerable {
 
     /**
      * Returns the enum element of the specified enum type with the specified name. The name must match exactly an
@@ -12,18 +13,20 @@ interface Enumerable
      * @param string $name The name of the element to return
      *
      * @return static
+     * @throws InvalidEnumDefinition
      */
-    public static function valueOf(string $name);
+    public static function valueOf ( string $name );
 
     /**
      * Returns an array containing the elements of this enum type, in the order they are declared.
      *
      * @return static[]
+     * @throws InvalidEnumDefinition
      */
     public static function values(): array;
 
     /**
-     * Returns the name of this enum element, exactly as declared in its declaration.
+     * Returns the name of this enum element, exactly as declared.
      *
      * @return string
      */

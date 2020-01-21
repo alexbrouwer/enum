@@ -1,0 +1,17 @@
+version: '3.7'
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  workspace:
+    image: par/core/workspace
+    build:
+      context: .
+      dockerfile: .docker/workspace/Dockerfile
+    volumes:
+      - .:/app
+    tty: true
+    networks:
+      - backend

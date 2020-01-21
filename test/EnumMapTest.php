@@ -1,252 +1,381 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace PARTest\Enum;
 
-use PAR\Enum\Enum;
 use PAR\Enum\EnumMap;
-use PAR\Enum\Exception\InvalidArgumentException;
+use PAR\Enum\Exception\InvalidEnumMapDefinition;
+use PAR\Enum\Exception\InvalidEnumMapKey;
+use PAR\Enum\Exception\InvalidEnumMapValue;
 use PARTest\Enum\Fixtures\Planet;
 use PARTest\Enum\Fixtures\WeekDay;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
-class EnumMapTest extends TestCase
-{
-    public function invalidValues(): array
-    {
-        return [
-            ['bool', null, false],
-            ['bool', 0],
-            ['boolean', 0],
-            ['int', 2.4],
-            ['integer', 5.3],
-            ['float', 3],
-            ['double', 7],
-            ['string', 1],
-            ['object', 1],
-            ['array', 1],
-            ['callable', 1],
-            [stdClass::class, 1],
-        ];
+class EnumMapTest extends TestCase {
+
+    /**
+     * @test
+     */
+    public function itCanBeIterated (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+        $map->put( Planet::MARS(), 'mars' );
+        $map->put( Planet::EARTH(), 'aarde' );
+        $map->put( Planet::NEPTUNE(), 'neptunes' );
+
+        $this->assertTrue( is_iterable( $map ) );
+
+        $elements = [];
+        $values = [];
+        foreach ( $map as $element => $value ) {
+            $elements[] = $element;
+            $values[] = $value;
+        }
+
+        $this->assertSame(
+            [
+                Planet::EARTH(),
+                Planet::MARS(),
+                Planet::NEPTUNE(),
+            ],
+            $elements
+        );
+        $this->assertSame(
+            [
+                'aarde',
+                'mars',
+                'neptunes',
+            ],
+            $values
+        );
     }
 
-    public function testClear(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        $map->put(WeekDay::TUESDAY(), 'foo');
+    /**
+     * @test
+     */
+    public function itCanBeSerialized (): void {
+        $map = $this->createPlanetTranslationsMap( true );
+        $map->put( Planet::MARS(), null );
+
+        $serialized = serialize( $map );
+
+        $mapFromSerialization = unserialize( $serialized );
+
+        $this->assertTrue( $map->equals( $mapFromSerialization ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanBeTransformedToString (): void {
+        $this->assertSame(
+            sprintf( '<%s,int>', Planet::class ),
+            EnumMap::for( Planet::class, 'int', false )->toString()
+        );
+
+        $this->assertSame(
+            sprintf( '<%s,?string>', Planet::class ),
+            EnumMap::for( Planet::class, 'string', true )->toString()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanClearAllValues (): void {
+        $map = $this->createPlanetTranslationsMap( false );
+        $this->assertSame( 8, $map->size() );
+
         $map->clear();
 
-        self::assertNull($map->get(WeekDay::TUESDAY()));
-        self::assertSame(0, $map->size());
-    }
-
-    public function testContainsKey(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        self::assertFalse($map->containsKey(WeekDay::TUESDAY()));
-
-        $map->put(WeekDay::TUESDAY(), 'foo');
-        self::assertTrue($map->containsKey(WeekDay::TUESDAY()));
-
-        $map->put(WeekDay::WEDNESDAY(), null);
-        self::assertTrue($map->containsKey(WeekDay::WEDNESDAY()));
-    }
-
-    public function testContainsValue(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        self::assertFalse($map->containsValue('foo'));
-
-        $map->put(WeekDay::THURSDAY(), 'foo');
-        self::assertTrue($map->containsValue('foo'));
-
-        self::assertFalse($map->containsValue(null));
-
-        $map->put(WeekDay::WEDNESDAY(), null);
-        self::assertTrue($map->containsValue(null));
-    }
-
-    public function testEqualsWithDifferentConstants(): void
-    {
-        $mapA = EnumMap::for(WeekDay::class, 'string', true);
-        $mapA->put(WeekDay::MONDAY(), 'foo');
-        $mapB = EnumMap::for(WeekDay::class, 'string', true);
-        $mapB->put(WeekDay::TUESDAY(), 'foo');
-        self::assertFalse($mapA->equals($mapB));
-    }
-
-    public function testEqualsWithDifferentSize(): void
-    {
-        $mapA = EnumMap::for(WeekDay::class, 'string', true);
-        $mapB = EnumMap::for(WeekDay::class, 'string', true);
-        $mapB->put(WeekDay::MONDAY(), 'foo');
-
-        self::assertFalse($mapA->equals($mapB));
-    }
-
-    public function testEqualsWithDifferentValues(): void
-    {
-        $mapA = EnumMap::for(WeekDay::class, 'string', true);
-        $mapA->put(WeekDay::MONDAY(), 'foo');
-        $mapB = EnumMap::for(WeekDay::class, 'string', true);
-        $mapB->put(WeekDay::MONDAY(), 'bar');
-        self::assertFalse($mapA->equals($mapB));
-    }
-
-    public function testEqualsWithSameInstance(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        self::assertTrue($map->equals($map));
-    }
-
-    public function testForWithInvalidKeyType(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        EnumMap::for(stdClass::class, 'string', false);
-    }
-
-    public function testForWithInvalidValueType(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        EnumMap::for(WeekDay::class, 'foo', false);
-    }
-
-    public function testIterator(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        $map->put(WeekDay::FRIDAY(), 'foo');
-        $map->put(WeekDay::TUESDAY(), 'bar');
-        $map->put(WeekDay::SUNDAY(), null);
-        $result = [];
-
-        /**
-         * @var Enum        $key
-         * @var string|null $value
-         */
-        foreach ($map as $key => $value) {
-            $result[$key->ordinal()] = $value;
-        }
-        self::assertSame([1 => 'bar', 4 => 'foo', 6 => null], $result);
-    }
-
-    public function testPutAndGet(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        $map->put(WeekDay::TUESDAY(), 'foo');
-        $map->put(WeekDay::FRIDAY(), null);
-
-        self::assertSame('foo', $map->get(WeekDay::TUESDAY()));
-        self::assertNull($map->get(WeekDay::WEDNESDAY()));
-        self::assertNull($map->get(WeekDay::FRIDAY()));
-    }
-
-    public function testPutInvalidKey(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        $map->put(Planet::MARS(), 'foo');
+        $this->assertSame( 0, $map->size() );
+        $this->assertSame( [], $map->values() );
     }
 
     /**
-     * @dataProvider invalidValues
-     *
-     * @param string $valueType
-     * @param mixed  $value
-     * @param bool   $allowNull
+     * @test
      */
-    public function testPutInvalidValue(string $valueType, $value, bool $allowNull = true): void
-    {
-        $this->expectException(InvalidArgumentException::class);
+    public function itCanCreateAStateMap (): void {
+        $map = EnumMap::withState( WeekDay::class, false );
 
-        $map = EnumMap::for(WeekDay::class, $valueType, $allowNull);
-        $map->put(WeekDay::TUESDAY(), $value);
+        $this->assertSame( count( WeekDay::values() ), $map->size() );
+        $this->assertTrue( $map->containsValue( false ) );
+        $this->assertFalse( $map->containsValue( true ) );
     }
 
     /**
-     * @dataProvider validValues
-     *
-     * @param string $valueType
-     * @param mixed  $value
-     * @param bool   $allowNull
+     * @test
      */
-    public function testPutValidValue(string $valueType, $value, bool $allowNull = true): void
-    {
-        $map = EnumMap::for(WeekDay::class, $valueType, $allowNull);
-        $map->put(WeekDay::TUESDAY(), $value);
+    public function itCanDetermineEqualityWithDifferentContent (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+        $map->put( Planet::EARTH(), 'aarde' );
 
-        $this->addToAssertionCount(1);
+        $otherMap = EnumMap::for( Planet::class, 'string', true );
+        $otherMap->put( Planet::EARTH(), 'earth' );
+
+        $this->assertFalse( $map->equals( $otherMap ) );
     }
 
-    public function testRemove(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        $map->put(WeekDay::TUESDAY(), 'foo');
-        $map->remove(WeekDay::TUESDAY());
-        $map->remove(WeekDay::WEDNESDAY());
+    /**
+     * @test
+     */
+    public function itCanDetermineEqualityWithDifferentKeyType (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+        $otherMap = EnumMap::for( WeekDay::class, 'string', true );
 
-        self::assertNull($map->get(WeekDay::TUESDAY()));
-        self::assertSame(0, $map->size());
+        $this->assertFalse( $map->equals( $otherMap ) );
     }
 
-    public function testSerializeAndUnserialize(): void
-    {
-        $mapA = EnumMap::for(WeekDay::class, 'string', true);
-        $mapA->put(WeekDay::MONDAY(), 'foo');
-        $mapB = unserialize(serialize($mapA));
-        self::assertTrue($mapA->equals($mapB));
+    /**
+     * @test
+     */
+    public function itCanDetermineEqualityWithDifferentSupportForNull (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+        $otherMap = EnumMap::for( Planet::class, 'string', false );
+
+        $this->assertFalse( $map->equals( $otherMap ) );
     }
 
-    public function testSize(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        self::assertSame(0, $map->size());
-        $map->put(WeekDay::MONDAY(), 'foo');
-        self::assertSame(1, $map->size());
+    /**
+     * @test
+     */
+    public function itCanDetermineEqualityWithDifferentValue (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+
+        $this->assertFalse( $map->equals( new stdClass() ) );
+        $this->assertFalse( $map->equals( null ) );
     }
 
-    public function testToString(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
+    /**
+     * @test
+     */
+    public function itCanDetermineEqualityWithSameDefinitionAndContent (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+        $map->put( Planet::EARTH(), 'aarde' );
 
-        $this->assertSame(sprintf('<%s,?string>', WeekDay::class), $map->toString());
+        $otherMap = EnumMap::for( Planet::class, 'string', true );
+        $otherMap->put( Planet::EARTH(), 'aarde' );
+
+        $this->assertTrue( $map->equals( $otherMap ) );
     }
 
-    public function testValues(): void
-    {
-        $map = EnumMap::for(WeekDay::class, 'string', true);
-        self::assertSame([], $map->values());
-        $map->put(WeekDay::FRIDAY(), 'foo');
-        $map->put(WeekDay::TUESDAY(), 'bar');
-        $map->put(WeekDay::SUNDAY(), null);
-        self::assertSame(['bar', 'foo', null], $map->values());
+    /**
+     * @test
+     */
+    public function itCanDetermineEqualityWithSameInstance (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+
+        $this->assertTrue( $map->equals( $map ) );
     }
 
-    public function validValues(): array
-    {
-        return [
-            ['bool', null],
-            ['mixed', 'foo'],
-            ['mixed', 1],
-            ['mixed', new stdClass()],
-            ['bool', true],
-            ['boolean', false],
-            ['int', 1],
-            ['integer', 4],
-            ['float', 2.5],
-            ['double', 6.4],
-            ['string', 'foo'],
-            ['object', new stdClass()],
-            ['array', ['foo']],
+    /**
+     * @test
+     */
+    public function itCanPutANullValueWhenAllowed (): void {
+        $map = EnumMap::for( Planet::class, 'string', true );
+
+        $this->assertNull( $map->get( Planet::EARTH() ) );
+        $this->assertSame( 0, $map->size() );
+
+        $map->put( Planet::EARTH(), 'aarde' );
+        $this->assertNotNull( $map->get( Planet::EARTH() ) );
+        $this->assertSame( 1, $map->size() );
+
+        $map->put( Planet::EARTH(), null );
+        $this->assertNull( $map->get( Planet::EARTH() ) );
+        $this->assertSame( 1, $map->size() );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanPutAValueForAnElement (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->assertNull( $map->get( Planet::EARTH() ) );
+        $this->assertSame( 0, $map->size() );
+
+        $map->put( Planet::EARTH(), 'aarde' );
+
+        $this->assertSame( 'aarde', $map->get( Planet::EARTH() ) );
+        $this->assertSame( 1, $map->size() );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanRemoveElementByKey (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+        $map->put( Planet::MARS(), 'mars' );
+
+        $this->assertSame( 'mars', $map->remove( Planet::MARS() ) );
+        $this->assertNull( $map->get( Planet::MARS() ) );
+        $this->assertSame( 0, $map->size() );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanReturnOnlyValues (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+        $map->put( Planet::MARS(), 'mars' );
+        $map->put( Planet::EARTH(), 'aarde' );
+        $map->put( Planet::NEPTUNE(), 'neptunes' );
+
+        $this->assertSame(
             [
-                'callable',
-                static function () {
-                    return true;
-                },
+                'aarde',
+                'mars',
+                'neptunes',
             ],
-            [stdClass::class, new stdClass()],
-        ];
+            $map->values()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfKeyIsNotPresent (): void {
+        $map = $this->createPlanetTranslationsMap( false );
+        $map->remove( Planet::MARS() );
+
+        $this->assertFalse( $map->containsKey( Planet::MARS() ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfKeyIsPresent (): void {
+        $map = $this->createPlanetTranslationsMap( false );
+
+        $this->assertTrue( $map->containsKey( Planet::EARTH() ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfKeyWithNullValueIsPresentWhenNullIsAllowed (): void {
+        $map = $this->createPlanetTranslationsMap( true );
+        $map->put( Planet::EARTH(), null );
+
+        $this->assertTrue( $map->containsKey( Planet::EARTH() ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfNullIsPresentWhenMapIsNullable (): void {
+        $map = $this->createPlanetTranslationsMap( true );
+        $map->put( Planet::EARTH(), null );
+
+        $this->assertTrue( $map->containsValue( null ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfValueIsNotPresent (): void {
+        $map = $this->createPlanetTranslationsMap( true );
+
+        $this->assertFalse( $map->containsValue( 'foobar' ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCanTestIfValueIsPresent (): void {
+        $map = $this->createPlanetTranslationsMap( true );
+        $map->put( Planet::EARTH(), 'earth' );
+
+        $this->assertTrue( $map->containsValue( 'earth' ) );
+    }
+
+    /**
+     * @test
+     */
+    public function itCannotPutANullValueWhenNotAllowed (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->expectExceptionObject(
+            InvalidEnumMapValue::nullNotAllowedFor( Planet::MARS() )
+        );
+
+        $map->put( Planet::MARS(), null );
+    }
+
+    /**
+     * @test
+     */
+    public function itCannotPutAValueForADifferentKey (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->expectExceptionObject(
+            InvalidEnumMapKey::withKey( WeekDay::MONDAY(), Planet::class )
+        );
+
+        $map->put( WeekDay::MONDAY(), 'maandag' );
+    }
+
+    /**
+     * @test
+     */
+    public function itCannotPutAValueWithADifferentType (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->expectExceptionObject(
+            InvalidEnumMapValue::wrongTypeFor( Planet::MARS(), 1, 'string' )
+        );
+
+        $map->put( Planet::MARS(), 1 );
+    }
+
+    /**
+     * @test
+     */
+    public function itCreatesAnEmptyInstance (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->assertSame( 0, $map->size() );
+    }
+
+    /**
+     * @test
+     */
+    public function itThrowsAnExceptionWhenCreateMapForUnknownValueType (): void {
+        $this->expectException( InvalidEnumMapDefinition::class );
+
+        EnumMap::for( Planet::class, 'foo', false );
+    }
+
+    /**
+     * @test
+     */
+    public function itThrowsAnExceptionWhenCreatingMapForNonEnumerableKey (): void {
+        $this->expectException( InvalidEnumMapDefinition::class );
+
+        EnumMap::for( 'string', 'string', false );
+    }
+
+    /**
+     * @test
+     */
+    public function itWillReturnPreviousValueOfElementWhenChangingTheElement (): void {
+        $map = EnumMap::for( Planet::class, 'string', false );
+
+        $this->assertNull( $map->put( Planet::EARTH(), 'aarde' ) );
+        $this->assertSame( 'aarde', $map->put( Planet::EARTH(), 'earth' ) );
+    }
+
+    private function createPlanetTranslationsMap ( bool $allowNullValues ): EnumMap {
+        $map = EnumMap::for( Planet::class, 'string', $allowNullValues );
+        $map->put( Planet::MERCURY(), 'Mercurius' );
+        $map->put( Planet::VENUS(), 'Venus' );
+        $map->put( Planet::EARTH(), 'Aarde' );
+        $map->put( Planet::MARS(), 'Mars' );
+        $map->put( Planet::JUPITER(), 'Jupiter' );
+        $map->put( Planet::SATURN(), 'Saturnus' );
+        $map->put( Planet::URANUS(), 'Uranus' );
+        $map->put( Planet::NEPTUNE(), 'Neptunes' );
+
+        return $map;
     }
 }

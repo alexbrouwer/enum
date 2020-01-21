@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace PARTest\Enum\Fixtures;
 
@@ -15,4 +15,5 @@ use PAR\Enum\Enum;
  */
 final class WeekDay extends Enum
 {
+
 }

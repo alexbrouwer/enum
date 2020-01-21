@@ -29,11 +29,10 @@
     },
     "require": {
         "php": "^7.2",
-        "par/core": "^1.2"
+        "par/core": "^1.0"
     },
     "require-dev": {
         "par/coding-standard": "^1.0",
-        "par/maker": "^1.0",
         "phpstan/phpstan": "^0.11.8",
         "phpunit/phpunit": "^8.1",
         "roave/security-advisories": "dev-master"

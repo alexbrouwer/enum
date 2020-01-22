@@ -1,4 +1,4 @@
-<?php
+<?php declare( strict_types=1 );
 
 namespace PAR\Enum\Exception;
 
@@ -53,7 +53,7 @@ final class InvalidEnumDefinition extends LogicException {
             return reset( $quoted );
         }
 
-        $lastString = array_unshift( $quoted );
+        $lastString = array_pop( $quoted );
 
         return sprintf( '%s and %s', implode( ', ', $quoted ), $lastString );
     }

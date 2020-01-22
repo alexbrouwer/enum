@@ -6,10 +6,12 @@ networks:
 
 services:
   workspace:
-    image: par/core/workspace
     build:
-      context: .
-      dockerfile: .docker/workspace/Dockerfile
+      context: .docker
+      dockerfile: ./workspace/Dockerfile
+      args:
+        - TZ=Europe/Amsterdam
+    container_name: service.workspace
     volumes:
       - .:/app
     tty: true

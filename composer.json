@@ -32,7 +32,7 @@
         "par/core": "^1.0"
     },
     "require-dev": {
-        "par/coding-standard": "^1.0",
+        "par/coding-standard": "^1.1",
         "phpstan/phpstan": "^0.11.8",
         "phpunit/phpunit": "^8.1",
         "roave/security-advisories": "dev-master"

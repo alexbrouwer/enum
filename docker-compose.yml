@@ -2,18 +2,18 @@ version: '3.7'
 
 networks:
   backend:
-    driver: bridge
+    driver: ${NETWORKS_DRIVER}
 
 services:
   workspace:
+      image: ${COMPOSE_PROJECT_NAME}/workspace
     build:
-      context: .docker
+        context: .
       dockerfile: ./workspace/Dockerfile
       args:
-        - TZ=Europe/Amsterdam
-    container_name: service.workspace
+          - TZ=${TIMEZONE}
     volumes:
-      - .:/app
+        - ../:/app
     tty: true
     networks:
       - backend

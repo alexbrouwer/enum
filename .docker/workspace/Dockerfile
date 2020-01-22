@@ -1,4 +1,5 @@
-FROM php:7.2-cli-alpine
+ARG TARGET_PHP_VERSION=7.2
+FROM php:${TARGET_PHP_VERSION}-cli-alpine
 
 ARG SERVICE_DIR="./workspace"
 

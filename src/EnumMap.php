@@ -286,8 +286,8 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
         $data = unserialize( $serialized, [ 'allowed_classes' => true ] );
         $this->__construct( $data[ 'keyType' ], $data[ 'valueType' ], $data[ 'allowNullValues' ] );
         foreach ( $this->keyUniverse as $key ) {
-            if (array_key_exists($key->ordinal(), $data['values'])) {
-                $this->put($key, $data['values'][$key->ordinal()]);
+            if ( array_key_exists( $key->ordinal(), $data[ 'values' ] ) ) {
+                $this->put( $key, $data[ 'values' ][ $key->ordinal() ] );
             }
         }
     }
@@ -309,7 +309,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
                 },
                 array_filter(
                     $this->values,
-                    static function ($value): bool {
+                    static function ( $value ): bool {
                         return null !== $value;
                     }
                 )
@@ -317,7 +317,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
         );
     }
 
-    private static function null(): object {
+    private static function null (): object {
         if ( !self::$null ) {
             self::$null = new class() implements NullValue {
 
@@ -419,6 +419,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
         if (null === $value) {
             return self::null();
         }
+
         return $value;
     }
 

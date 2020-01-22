@@ -104,7 +104,7 @@ abstract class Enum implements Enumerable, ObjectInterface, Serializable {
 
         // Validate all or none of the methods have a constant value
         $missingConstants = array_diff( $methods, array_keys( $constants ) );
-        $numMissingConstants = count($missingConstants);
+        $numMissingConstants = count( $missingConstants );
         if ($numMissingConstants > 0 && $numMissingConstants !== count($methods)) {
             throw InvalidEnumDefinition::missingClassConstants( $className, $missingConstants );
         }

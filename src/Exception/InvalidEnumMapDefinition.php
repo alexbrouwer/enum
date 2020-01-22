@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PAR\Enum\Exception;
 
 use PAR\Enum\Enumerable;
 
-final class InvalidEnumMapDefinition extends InvalidArgumentException {
+final class InvalidEnumMapDefinition extends InvalidArgumentException
+{
 
-    public static function withInvalidKeyType ( string $keyType ): self {
+    public static function withInvalidKeyType(string $keyType): self
+    {
         return new self(
             sprintf(
                 'Invalid keyType, must be a fully qualified class name implementing %s, got "%s"',
@@ -16,11 +20,12 @@ final class InvalidEnumMapDefinition extends InvalidArgumentException {
         );
     }
 
-    public static function withInvalidValueType ( string $valueType, array $supportedValueTypes ): self {
+    public static function withInvalidValueType(string $valueType, array $supportedValueTypes): self
+    {
         return new self(
             sprintf(
                 'Invalid valueType, expected one of [%s] or an existing class, got "%s"',
-                implode( ',', $supportedValueTypes ),
+                implode(',', $supportedValueTypes),
                 $valueType
             )
         );

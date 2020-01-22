@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace PAR\Enum;
 
@@ -9,7 +11,8 @@ use PAR\Enum\Exception\InvalidEnumMapKey;
 use PAR\Enum\Exception\InvalidEnumMapValue;
 use Serializable;
 
-final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable {
+final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable
+{
 
     private const TYPE_MIXED = 'mixed';
     private const TYPE_BOOL = 'bool';
@@ -87,30 +90,32 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
     /**
      * Create a new EnumMap for specified enum
      *
-     * @param string $keyType         Classname implementing Enumerable interface
-     * @param string $valueType       Value type for values
-     * @param bool   $allowNullValues True to allow null values
+     * @param string $keyType       Classname implementing Enumerable interface
+     * @param string $valueType     Value type for values
+     * @param bool $allowNullValues True to allow null values
      *
      * @return static
      */
-    public static function for ( string $keyType, string $valueType, bool $allowNullValues ): self {
-        return new self( $keyType, $valueType, $allowNullValues );
+    public static function for(string $keyType, string $valueType, bool $allowNullValues): self
+    {
+        return new self($keyType, $valueType, $allowNullValues);
     }
 
     /**
      * Create a new EnumMap for specified enum with a default boolean value
      *
-     * @param string $keyType      Classname implementing Enumerable interface
-     * @param bool   $defaultState Default state to set for each element
+     * @param string $keyType    Classname implementing Enumerable interface
+     * @param bool $defaultState Default state to set for each element
      *
      * @return static
      */
-    public static function withState ( string $keyType, bool $defaultState ): self {
-        $map = static::for( $keyType, static::TYPE_BOOL, false );
+    public static function withState(string $keyType, bool $defaultState): self
+    {
+        $map = static::for($keyType, static::TYPE_BOOL, false);
 
-        $callable = [ $keyType, 'values' ];
-        foreach ( $callable() as $key ) {
-            $map->put( $key, $defaultState );
+        $callable = [$keyType, 'values'];
+        foreach ($callable() as $key) {
+            $map->put($key, $defaultState);
         }
 
         return $map;
@@ -119,8 +124,9 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
     /**
      * Removes all mappings from this map.
      */
-    public function clear (): void {
-        $this->values = array_fill( 0, count( $this->keyUniverse ), null );
+    public function clear(): void
+    {
+        $this->values = array_fill(0, count($this->keyUniverse), null);
         $this->size = 0;
     }
 
@@ -132,8 +138,9 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      * @return bool
      * @throws InvalidEnumMapKey If an invalid key type is provided
      */
-    public function containsKey ( Enumerable $key ): bool {
-        return $this->isValidKey( $key ) && null !== $this->values[ $key->ordinal() ];
+    public function containsKey(Enumerable $key): bool
+    {
+        return $this->isValidKey($key) && null !== $this->values[$key->ordinal()];
     }
 
     /**
@@ -143,24 +150,26 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      *
      * @return bool
      */
-    public function containsValue ( $value ): bool {
-        return in_array( $this->maskNull( $value ), $this->values, true );
+    public function containsValue($value): bool
+    {
+        return in_array($this->maskNull($value), $this->values, true);
     }
 
     /**
      * @inheritDoc
      */
-    public function equals ( $other ): bool {
-        if ( $this === $other ) {
+    public function equals($other): bool
+    {
+        if ($this === $other) {
             return true;
         }
 
-        if ( $other instanceof self ) {
+        if ($other instanceof self) {
             return $this->keyType === $other->keyType
-                   && $this->valueType === $other->valueType
-                   && $this->allowNullValues === $other->allowNullValues
-                   && $this->size === $other->size
-                   && $this->values === $other->values;
+                && $this->valueType === $other->valueType
+                && $this->allowNullValues === $other->allowNullValues
+                && $this->size === $other->size
+                && $this->values === $other->values;
         }
 
         return false;
@@ -174,21 +183,23 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      * @return mixed
      * @throws InvalidEnumMapKey If an invalid key type is provided
      */
-    public function get ( Enumerable $key ) {
-        $this->assertKeyType( $key );
+    public function get(Enumerable $key)
+    {
+        $this->assertKeyType($key);
 
-        return $this->unmaskNull( $this->values[ $key->ordinal() ] );
+        return $this->unmaskNull($this->values[$key->ordinal()]);
     }
 
     /**
      * @inheritDoc
      */
-    public function getIterator () {
-        foreach ( $this->keyUniverse as $key ) {
-            if ( null === $this->values[ $key->ordinal() ] ) {
+    public function getIterator()
+    {
+        foreach ($this->keyUniverse as $key) {
+            if (null === $this->values[$key->ordinal()]) {
                 continue;
             }
-            yield $key => $this->unmaskNull( $this->values[ $key->ordinal() ] );
+            yield $key => $this->unmaskNull($this->values[$key->ordinal()]);
         }
     }
 
@@ -200,20 +211,21 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      * @throws InvalidEnumMapKey When provided key is not allowed
      * @throws InvalidEnumMapValue When provided value is not allowed
      */
-    public function put ( Enumerable $key, $value ) {
-        $this->assertKeyType( $key );
-        $this->assertValueType( $value, $key );
+    public function put(Enumerable $key, $value)
+    {
+        $this->assertKeyType($key);
+        $this->assertValueType($value, $key);
 
         $index = $key->ordinal();
-        $oldValue = $this->values[ $index ];
+        $oldValue = $this->values[$index];
 
-        $this->values[ $index ] = $this->maskNull( $value );
+        $this->values[$index] = $this->maskNull($value);
 
-        if ( null === $oldValue ) {
+        if (null === $oldValue) {
             ++$this->size;
         }
 
-        return $this->unmaskNull( $oldValue );
+        return $this->unmaskNull($oldValue);
     }
 
     /**
@@ -224,17 +236,18 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      * @return mixed The previous value associated with the specified key, or null if there was no mapping for the key.
      * @throws InvalidEnumMapKey If an invalid key type is provided
      */
-    public function remove ( Enumerable $key ) {
-        $this->assertKeyType( $key );
+    public function remove(Enumerable $key)
+    {
+        $this->assertKeyType($key);
 
         $index = $key->ordinal();
-        $oldValue = $this->values[ $index ];
-        $this->values[ $index ] = null;
-        if ( null !== $oldValue ) {
+        $oldValue = $this->values[$index];
+        $this->values[$index] = null;
+        if (null !== $oldValue) {
             --$this->size;
         }
 
-        return $this->unmaskNull( $oldValue );
+        return $this->unmaskNull($oldValue);
     }
 
     /**
@@ -263,14 +276,16 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
     /**
      * Returns the number of key-value mappings in this map
      */
-    public function size (): int {
+    public function size(): int
+    {
         return $this->size;
     }
 
     /**
      * @inheritDoc
      */
-    public function toString (): string {
+    public function toString(): string
+    {
         return sprintf(
             '<%s,%s%s>',
             $this->keyType,
@@ -282,12 +297,13 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
     /**
      * @inheritDoc
      */
-    public function unserialize ( $serialized ): void {
-        $data = unserialize( $serialized, [ 'allowed_classes' => true ] );
-        $this->__construct( $data[ 'keyType' ], $data[ 'valueType' ], $data[ 'allowNullValues' ] );
-        foreach ( $this->keyUniverse as $key ) {
-            if ( array_key_exists( $key->ordinal(), $data[ 'values' ] ) ) {
-                $this->put( $key, $data[ 'values' ][ $key->ordinal() ] );
+    public function unserialize($serialized): void
+    {
+        $data = unserialize($serialized, ['allowed_classes' => true]);
+        $this->__construct($data['keyType'], $data['valueType'], $data['allowNullValues']);
+        foreach ($this->keyUniverse as $key) {
+            if (array_key_exists($key->ordinal(), $data['values'])) {
+                $this->put($key, $data['values'][$key->ordinal()]);
             }
         }
     }
@@ -309,7 +325,7 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
                 },
                 array_filter(
                     $this->values,
-                    static function ( $value ): bool {
+                    static function ($value): bool {
                         return null !== $value;
                     }
                 )
@@ -317,9 +333,10 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
         );
     }
 
-    private static function null (): object {
-        if ( !self::$null ) {
-            self::$null = new class() implements NullValue {
+    private static function null(): object
+    {
+        if (!self::$null) {
+            self::$null = new class () implements NullValue {
 
             };
         }
@@ -327,9 +344,10 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
         return self::$null;
     }
 
-    private function assertKeyType ( Enumerable $key ) {
-        if ( !$this->isValidKey( $key ) ) {
-            throw InvalidEnumMapKey::withKey( $key, $this->keyType );
+    private function assertKeyType(Enumerable $key)
+    {
+        if (!$this->isValidKey($key)) {
+            throw InvalidEnumMapKey::withKey($key, $this->keyType);
         }
     }
 
@@ -338,20 +356,22 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      *
      * @return bool
      */
-    private function isValidKey ( Enumerable $key ): bool {
-        return get_class( $key ) === $this->keyType;
+    private function isValidKey(Enumerable $key): bool
+    {
+        return get_class($key) === $this->keyType;
     }
 
-    private function assertValueType ( $value, Enumerable $key ) {
-        if ( null === $value ) {
-            if ( !$this->allowNullValues ) {
-                throw InvalidEnumMapValue::nullNotAllowedFor( $key );
+    private function assertValueType($value, Enumerable $key)
+    {
+        if (null === $value) {
+            if (!$this->allowNullValues) {
+                throw InvalidEnumMapValue::nullNotAllowedFor($key);
             }
 
             return;
         }
 
-        switch ( $this->valueType ) {
+        switch ($this->valueType) {
             case self::TYPE_MIXED:
                 $test = static function () {
                     return true;
@@ -359,51 +379,51 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
                 break;
             case self::TYPE_BOOL:
             case self::TYPE_BOOLEAN:
-                $test = static function ( $value ) {
-                    return is_bool( $value );
+                $test = static function ($value) {
+                    return is_bool($value);
                 };
                 break;
             case self::TYPE_INT:
             case self::TYPE_INTEGER:
-                $test = static function ( $value ) {
-                    return is_int( $value );
+                $test = static function ($value) {
+                    return is_int($value);
                 };
                 break;
             case self::TYPE_FLOAT:
             case self::TYPE_DOUBLE:
-                $test = static function ( $value ) {
-                    return is_float( $value );
+                $test = static function ($value) {
+                    return is_float($value);
                 };
                 break;
             case self::TYPE_STRING:
-                $test = static function ( $value ) {
-                    return is_string( $value );
+                $test = static function ($value) {
+                    return is_string($value);
                 };
                 break;
             case self::TYPE_OBJECT:
-                $test = static function ( $value ) {
-                    return is_object( $value );
+                $test = static function ($value) {
+                    return is_object($value);
                 };
                 break;
             case self::TYPE_ARRAY:
-                $test = static function ( $value ) {
-                    return is_array( $value );
+                $test = static function ($value) {
+                    return is_array($value);
                 };
                 break;
             case self::TYPE_CALLABLE:
-                $test = static function ( $value ) {
-                    return is_callable( $value );
+                $test = static function ($value) {
+                    return is_callable($value);
                 };
                 break;
             default:
-                $test = static function ( $value, $type ) {
+                $test = static function ($value, $type) {
                     return $value instanceof $type;
                 };
                 break;
         }
 
-        if ( !$test( $value, $this->valueType ) ) {
-            throw InvalidEnumMapValue::wrongTypeFor( $key, $value, $this->valueType );
+        if (!$test($value, $this->valueType)) {
+            throw InvalidEnumMapValue::wrongTypeFor($key, $value, $this->valueType);
         }
     }
 
@@ -430,30 +450,32 @@ final class EnumMap implements ObjectInterface, IteratorAggregate, Serializable 
      *
      * @return mixed
      */
-    private function unmaskNull ( $value ) {
+    private function unmaskNull($value)
+    {
         $null = self::null();
-        if ( $value instanceof $null ) {
+        if ($value instanceof $null) {
             return null;
         }
 
         return $value;
     }
 
-    private function __construct ( string $keyType, string $valueType, bool $allowNullValues ) {
-        if ( !class_exists( $keyType ) || !in_array( Enumerable::class, class_implements( $keyType, true ), true ) ) {
-            throw InvalidEnumMapDefinition::withInvalidKeyType( $keyType );
+    private function __construct(string $keyType, string $valueType, bool $allowNullValues)
+    {
+        if (!class_exists($keyType) || !in_array(Enumerable::class, class_implements($keyType, true), true)) {
+            throw InvalidEnumMapDefinition::withInvalidKeyType($keyType);
         }
         $this->keyType = $keyType;
 
         $this->valueType = $valueType;
-        if ( !in_array( $valueType, self::$supportedValueTypes, true ) && !class_exists( $valueType ) ) {
-            throw InvalidEnumMapDefinition::withInvalidValueType( $valueType, self::$supportedValueTypes );
+        if (!in_array($valueType, self::$supportedValueTypes, true) && !class_exists($valueType)) {
+            throw InvalidEnumMapDefinition::withInvalidValueType($valueType, self::$supportedValueTypes);
         }
 
         $this->allowNullValues = $allowNullValues;
 
-        $callable = [ $keyType, 'values' ];
+        $callable = [$keyType, 'values'];
         $this->keyUniverse = $callable();
-        $this->values = array_fill( 0, count( $this->keyUniverse ), null );
+        $this->values = array_fill(0, count($this->keyUniverse), null);
     }
 }

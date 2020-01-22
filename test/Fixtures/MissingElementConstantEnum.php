@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PARTest\Enum\Fixtures;
 
 use PAR\Enum\Enum;
@@ -10,7 +12,8 @@ use PAR\Enum\Enum;
  * @method static self PRIVATE_CONST();
  * @method static self MISSING_CONST();
  */
-final class MissingElementConstantEnum extends Enum {
+final class MissingElementConstantEnum extends Enum
+{
 
     public const PUBLIC_CONST = [];
     protected const PROTECTED_CONST = [];

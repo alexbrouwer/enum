@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace PARTest\Enum\Fixtures;
 
 use PAR\Enum\Enum;
